@@ -1,0 +1,61 @@
+// Package postgres содержит реализации репозиториев через pgx/v5.
+package postgres
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/gmtantsevov/shuggabuddy/internal/domain"
+)
+
+type UserRepo struct {
+	pool *pgxpool.Pool
+}
+
+func NewUserRepo(pool *pgxpool.Pool) *UserRepo {
+	return &UserRepo{pool: pool}
+}
+
+func (r *UserRepo) GetByID(ctx context.Context, id int64) (*domain.User, error) {
+	u := &domain.User{}
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, units, created_at FROM users WHERE id = $1`, id,
+	).Scan(&u.ID, &u.Units, &u.CreatedAt)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("UserRepo.GetByID: %w", err)
+	}
+
+	return u, nil
+}
+
+func (r *UserRepo) Create(ctx context.Context, user *domain.User) error {
+	err := r.pool.QueryRow(ctx,
+		`INSERT INTO users (units) VALUES ($1) RETURNING id`,
+		user.Units,
+	).Scan(&user.ID)
+	if err != nil {
+		return fmt.Errorf("UserRepo.Create: %w", err)
+	}
+
+	return nil
+}
+
+func (r *UserRepo) UpdateUnits(ctx context.Context, id int64, units domain.Units) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET units = $1 WHERE id = $2`,
+		units, id,
+	)
+	if err != nil {
+		return fmt.Errorf("UserRepo.UpdateUnits: %w", err)
+	}
+
+	return nil
+}
