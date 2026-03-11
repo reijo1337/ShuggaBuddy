@@ -12,76 +12,83 @@ import (
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/glucose"
 )
 
-// handleGlucose обрабатывает команду /glucose <value>.
-func (h *Handler) handleGlucose(ctx context.Context, msg *tgbotapi.Message) {
-	args := strings.TrimSpace(msg.CommandArguments())
-	if args == "" {
-		h.reply(msg.Chat.ID, h.loc.T("glucose_usage"))
-		return
-	}
+// handleGlucoseStart переводит пользователя в режим ожидания ввода сахара.
+func (h *Handler) handleGlucoseStart(cb *tgbotapi.CallbackQuery) {
+	h.waitingGlucose.Store(cb.Message.Chat.ID, cb.From.ID)
+	h.replyWithKeyboard(cb.Message.Chat.ID, h.loc.T("glucose_prompt"), h.backToMenuKeyboard())
+}
 
-	value, err := strconv.ParseFloat(args, 64)
+// handleGlucoseInput обрабатывает текстовый ввод уровня сахара.
+func (h *Handler) handleGlucoseInput(ctx context.Context, msg *tgbotapi.Message) {
+	text := strings.TrimSpace(msg.Text)
+
+	value, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		h.reply(msg.Chat.ID, h.loc.T("glucose_invalid"))
+		h.replyWithKeyboard(msg.Chat.ID, h.loc.T("glucose_invalid_short"), h.backToMenuKeyboard())
 		return
 	}
 
 	user, _, err := h.userUC.GetProfile(ctx, domain.ProviderTelegram, strconv.FormatInt(msg.From.ID, 10))
 	if err != nil || user == nil {
-		h.log.Error("handleGlucose: failed to get user", zap.Error(err))
+		h.log.Error("handleGlucoseInput: failed to get user", zap.Error(err))
 		h.reply(msg.Chat.ID, h.loc.T("error_internal"))
 		return
 	}
 
 	if err := h.glucUC.SaveReading(ctx, user.ID, value, user.Units); err != nil {
-		h.log.Warn("handleGlucose: invalid reading",
+		h.log.Warn("handleGlucoseInput: invalid reading",
 			zap.Error(err),
 			zap.Float64("value", value),
 		)
+		var rangeMsg string
 		if user.Units == domain.UnitsMgdl {
-			h.reply(msg.Chat.ID, h.loc.T("glucose_out_of_range_mgdl"))
+			rangeMsg = h.loc.T("glucose_out_of_range_mgdl")
 		} else {
-			h.reply(msg.Chat.ID, h.loc.T("glucose_out_of_range_mmol"))
+			rangeMsg = h.loc.T("glucose_out_of_range_mmol")
 		}
+		h.replyWithKeyboard(msg.Chat.ID, rangeMsg, h.backToMenuKeyboard())
 		return
 	}
 
-	unitsLabel := h.loc.T("units_mmol")
+	unitsLabel := h.unitsLabel(string(user.Units))
+
+	// Пользователь вводит в своих единицах — отображаем как введено.
+	var displayValue string
 	if user.Units == domain.UnitsMgdl {
-		unitsLabel = h.loc.T("units_mgdl")
+		displayValue = strconv.FormatFloat(value, 'f', 0, 64)
+	} else {
+		displayValue = strconv.FormatFloat(value, 'f', 1, 64)
 	}
 
-	h.reply(msg.Chat.ID, h.loc.T("glucose_saved",
-		glucose.FormatValue(value, domain.UnitsMmol), // отображаем как введено
-		unitsLabel,
-	))
+	h.replyWithKeyboard(
+		msg.Chat.ID,
+		h.loc.T("glucose_saved", displayValue, unitsLabel),
+		h.backToMenuKeyboard(),
+	)
 }
 
-// handleLast обрабатывает команду /last.
-func (h *Handler) handleLast(ctx context.Context, msg *tgbotapi.Message) {
-	user, _, err := h.userUC.GetProfile(ctx, domain.ProviderTelegram, strconv.FormatInt(msg.From.ID, 10))
+// handleLastCb показывает последние 5 записей.
+func (h *Handler) handleLastCb(ctx context.Context, cb *tgbotapi.CallbackQuery) {
+	user, _, err := h.userUC.GetProfile(ctx, domain.ProviderTelegram, strconv.FormatInt(cb.From.ID, 10))
 	if err != nil || user == nil {
-		h.log.Error("handleLast: failed to get user", zap.Error(err))
-		h.reply(msg.Chat.ID, h.loc.T("error_internal"))
+		h.log.Error("handleLastCb: failed to get user", zap.Error(err))
+		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
 		return
 	}
 
 	readings, err := h.glucUC.GetLastReadings(ctx, user.ID, 5)
 	if err != nil {
-		h.log.Error("handleLast: failed to get readings", zap.Error(err))
-		h.reply(msg.Chat.ID, h.loc.T("error_internal"))
+		h.log.Error("handleLastCb: failed to get readings", zap.Error(err))
+		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
 		return
 	}
 
 	if len(readings) == 0 {
-		h.reply(msg.Chat.ID, h.loc.T("last_empty"))
+		h.replyWithKeyboard(cb.Message.Chat.ID, h.loc.T("last_empty_short"), h.backToMenuKeyboard())
 		return
 	}
 
-	unitsLabel := h.loc.T("units_mmol")
-	if user.Units == domain.UnitsMgdl {
-		unitsLabel = h.loc.T("units_mgdl")
-	}
+	unitsLabel := h.unitsLabel(string(user.Units))
 
 	var sb strings.Builder
 	sb.WriteString(h.loc.T("last_header"))
@@ -96,5 +103,5 @@ func (h *Handler) handleLast(ctx context.Context, msg *tgbotapi.Message) {
 		sb.WriteString("\n")
 	}
 
-	h.reply(msg.Chat.ID, sb.String())
+	h.replyWithKeyboard(cb.Message.Chat.ID, sb.String(), h.backToMenuKeyboard())
 }

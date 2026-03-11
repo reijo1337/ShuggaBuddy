@@ -3,28 +3,30 @@ package telegram
 
 import (
 	"context"
+	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 
 	"github.com/gmtantsevov/shuggabuddy/internal/i18n"
-	"github.com/gmtantsevov/shuggabuddy/internal/usecase/glucose"
-	"github.com/gmtantsevov/shuggabuddy/internal/usecase/user"
 )
 
 // Handler объединяет все обработчики команд Telegram-бота.
 type Handler struct {
-	bot    *tgbotapi.BotAPI
-	userUC *user.UseCase
-	glucUC *glucose.UseCase
+	bot    BotAPI
+	userUC UserUseCase
+	glucUC GlucoseUseCase
 	loc    *i18n.Localizer
 	log    *zap.Logger
+
+	// waitingGlucose хранит chat ID пользователей, ожидающих ввод уровня сахара.
+	waitingGlucose sync.Map
 }
 
 func NewHandler(
-	bot *tgbotapi.BotAPI,
-	userUC *user.UseCase,
-	glucUC *glucose.UseCase,
+	bot BotAPI,
+	userUC UserUseCase,
+	glucUC GlucoseUseCase,
 	loc *i18n.Localizer,
 	log *zap.Logger,
 ) *Handler {
@@ -54,23 +56,19 @@ func (h *Handler) Run(ctx context.Context) {
 				continue
 			}
 
-			if update.Message == nil || !update.Message.IsCommand() {
+			if update.Message == nil {
 				continue
 			}
 
-			switch update.Message.Command() {
-			case "start":
+			if update.Message.IsCommand() && update.Message.Command() == "start" {
 				h.handleStart(ctx, update.Message)
-			case "help":
-				h.handleHelp(update.Message)
-			case "profile":
-				h.handleProfile(ctx, update.Message)
-			case "setunits":
-				h.handleSetUnits(update.Message)
-			case "glucose":
-				h.handleGlucose(ctx, update.Message)
-			case "last":
-				h.handleLast(ctx, update.Message)
+				continue
+			}
+
+			// Обработка текстового ввода уровня сахара.
+			if _, ok := h.waitingGlucose.Load(update.Message.Chat.ID); ok {
+				h.handleGlucoseInput(ctx, update.Message)
+				continue
 			}
 		}
 	}
@@ -86,8 +84,47 @@ func (h *Handler) reply(chatID int64, text string) {
 
 func (h *Handler) replyWithKeyboard(chatID int64, text string, keyboard tgbotapi.InlineKeyboardMarkup) {
 	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "Markdown"
 	msg.ReplyMarkup = keyboard
 	if _, err := h.bot.Send(msg); err != nil {
 		h.log.Error("failed to send message with keyboard", zap.Error(err), zap.Int64("chat_id", chatID))
 	}
+}
+
+func (h *Handler) menuKeyboard(unitsLabel string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_profile"), "menu:profile"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				h.loc.T("btn_units", unitsLabel), "menu:units",
+			),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_glucose"), "menu:glucose"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_last"), "menu:last"),
+		),
+	)
+}
+
+func (h *Handler) backToMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_back_menu"), "menu:back"),
+		),
+	)
+}
+
+func (h *Handler) sendMenu(chatID int64, text string, unitsLabel string) {
+	h.replyWithKeyboard(chatID, text, h.menuKeyboard(unitsLabel))
+}
+
+func (h *Handler) unitsLabel(units string) string {
+	if units == "mgdl" {
+		return h.loc.T("units_mgdl")
+	}
+	return h.loc.T("units_mmol")
 }
