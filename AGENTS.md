@@ -44,9 +44,10 @@ delivery → usecase → domain ← repository
 
 ### Delivery (`internal/delivery/telegram/`)
 
-- Обработчики команд Telegram-бота
-- Маршрутизация команд в `handler.go`
-- Вызывает usecase-слой, никогда — репозитории напрямую
+- Взаимодействие через inline-кнопки, единственная команда — `/start`
+- Маршрутизация callback-запросов в `handler.go`, интерфейсы зависимостей — в `deps.go`
+- Вызывает usecase-слой через интерфейсы (`UserUseCase`, `GlucoseUseCase`, `BotAPI`), никогда — репозитории напрямую
+- Моки delivery-слоя хранятся в `internal/delivery/telegram/mocks/`
 
 ### Pkg (`pkg/`)
 
@@ -63,9 +64,9 @@ delivery → usecase → domain ← repository
 ## Testing
 
 - Фреймворк: `testify` (ассерты), `go.uber.org/mock` (моки)
-- Моки генерируются через `//go:generate mockgen`, хранятся в `internal/domain/mocks/`
+- Моки генерируются через `//go:generate mockgen`, хранятся в `internal/domain/mocks/` и `internal/delivery/telegram/mocks/`
 - Тесты — в `*_test.go` рядом с тестируемым кодом
-- Юнит-тесты обязательны для usecase-слоя
+- Юнит-тесты обязательны для usecase- и delivery-слоёв
 - Табличные тесты (table-driven) для валидации и граничных случаев
 - Не мокать то, что можно проверить напрямую
 - Запуск: `make test`
@@ -98,14 +99,15 @@ delivery → usecase → domain ← repository
 
 При любых работах не нужно ничего коммитить.
 
-### New Bot Command
+### New Bot Action (inline-кнопка)
 
 1. Добавить ключи переводов в `locales/ru.yaml`
 2. Добавить handler в `internal/delivery/telegram/`
-3. Зарегистрировать в роутере (`handler.go`)
-4. Если нужна бизнес-логика — добавить метод в usecase
-5. Если нужны данные — добавить метод в domain-интерфейс и реализацию в repository
-6. Написать тесты на usecase
+3. Зарегистрировать callback в роутере (`handleCallback` в `user.go`)
+4. Если нужен новый метод usecase — добавить в интерфейс в `deps.go` и перегенерировать моки: `go generate ./internal/delivery/telegram/...`
+5. Если нужна бизнес-логика — добавить метод в usecase
+6. Если нужны данные — добавить метод в domain-интерфейс и реализацию в repository
+7. Написать тесты на usecase и delivery
 
 ### New Entity
 
