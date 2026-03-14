@@ -30,10 +30,21 @@ const (
 	SessionGlucose   = sessionGlucose
 	SessionFood      = sessionFood
 	SessionCarbsUnit = sessionCarbsUnit
+	SessionInsulin   = sessionInsulin
 
 	StepGlucoseValue   = stepGlucoseValue
 	StepFoodCarbs      = stepFoodCarbs
 	StepFoodNote       = stepFoodNote
 	StepFoodTime       = stepFoodTime
 	StepCarbsUnitValue = stepCarbsUnitValue
+
+	StepInsulinType    = stepInsulinType
+	StepInsulinDose    = stepInsulinDose
+	StepInsulinConfirm = stepInsulinConfirm
+	StepInsulinDrug    = stepInsulinDrug
 )
+
+// SetSession stores a session directly for use in tests.
+func (h *Handler) SetSession(chatID int64, sess *Session) {
+	h.sessions.Store(chatID, sess)
+}
