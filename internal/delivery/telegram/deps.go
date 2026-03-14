@@ -42,3 +42,11 @@ type FoodUseCase interface {
 	SaveEntry(ctx context.Context, userID int64, carbsGrams float64, note string, eatenAt time.Time) error
 	GetLastEntries(ctx context.Context, userID int64, limit int) ([]domain.FoodEntry, error)
 }
+
+//go:generate mockgen -destination=mocks/mock_insulin_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram InsulinUseCase
+
+// InsulinUseCase описывает бизнес-логику инсулина, необходимую delivery-слою.
+type InsulinUseCase interface {
+	SaveDose(ctx context.Context, userID int64, dose float64, insulinType domain.InsulinType, drug string) error
+	GetLastDoses(ctx context.Context, userID int64, limit int) ([]domain.InsulinDose, error)
+}

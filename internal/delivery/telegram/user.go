@@ -86,6 +86,19 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 		h.setCarbsPerUnit(ctx, cb, 12.0)
 	case "carbs_unit:custom":
 		h.handleCarbsUnitCustom(cb)
+	case "menu:insulin":
+		h.handleInsulinStart(cb)
+	case "insulin:type:bolus":
+		h.handleInsulinTypeSelect(cb, domain.InsulinTypeBolus)
+	case "insulin:type:basal":
+		h.handleInsulinTypeSelect(cb, domain.InsulinTypeBasal)
+	case "insulin:skip_drug":
+		h.handleInsulinSkipDrug(ctx, cb)
+	case "insulin:confirm":
+		h.handleInsulinConfirm(ctx, cb)
+	case "insulin:cancel":
+		h.sessions.Delete(cb.Message.Chat.ID)
+		h.handleMenuBack(ctx, cb)
 	}
 }
 

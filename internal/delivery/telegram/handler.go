@@ -14,12 +14,13 @@ import (
 
 // Handler объединяет все обработчики команд Telegram-бота.
 type Handler struct {
-	bot    BotAPI
-	userUC UserUseCase
-	glucUC GlucoseUseCase
-	foodUC FoodUseCase
-	loc    *i18n.Localizer
-	log    *zap.Logger
+	bot       BotAPI
+	userUC    UserUseCase
+	glucUC    GlucoseUseCase
+	foodUC    FoodUseCase
+	insulinUC InsulinUseCase
+	loc       *i18n.Localizer
+	log       *zap.Logger
 
 	// sessions хранит активные диалоговые сессии, ключ — chat ID.
 	sessions sync.Map
@@ -30,16 +31,18 @@ func NewHandler(
 	userUC UserUseCase,
 	glucUC GlucoseUseCase,
 	foodUC FoodUseCase,
+	insulinUC InsulinUseCase,
 	loc *i18n.Localizer,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
-		bot:    bot,
-		userUC: userUC,
-		glucUC: glucUC,
-		foodUC: foodUC,
-		loc:    loc,
-		log:    log,
+		bot:       bot,
+		userUC:    userUC,
+		glucUC:    glucUC,
+		foodUC:    foodUC,
+		insulinUC: insulinUC,
+		loc:       loc,
+		log:       log,
 	}
 }
 
@@ -87,6 +90,8 @@ func (h *Handler) handleSessionInput(ctx context.Context, msg *tgbotapi.Message,
 		h.handleFoodStep(ctx, msg, sess)
 	case sessionCarbsUnit:
 		h.handleCarbsUnitStep(ctx, msg, sess)
+	case sessionInsulin:
+		h.handleInsulinStep(ctx, msg, sess)
 	}
 }
 
@@ -129,6 +134,9 @@ func (h *Handler) menuKeyboard(unitsLabel, carbsPerUnit string) tgbotapi.InlineK
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_food"), "menu:food"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_insulin"), "menu:insulin"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_last"), "menu:last"),

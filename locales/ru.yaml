@@ -61,5 +61,22 @@ last_header: "Последние записи:"
 last_glucose_row: "  %s — 🩸 %s %s"
 last_food_row: "  %s — 🍽 %sг%s"
 
+# Инсулин
+btn_insulin: "💉 Записать инсулин"
+insulin_type_prompt: "Выбери тип инсулина:"
+insulin_btn_bolus: "Болюс (быстрый)"
+insulin_btn_basal: "Базовый (длинный)"
+insulin_dose_prompt: "Введи дозу в единицах (например: 8):"
+insulin_invalid_dose: "Некорректное значение. Введи положительное число, например: 8"
+insulin_anomaly_warning: "⚠️ Вы уверены? Это *%s ед.* — необычно большая доза для %s. Подтвердить?"
+insulin_btn_confirm: "✅ Да, подтвердить"
+insulin_btn_cancel: "❌ Отмена"
+insulin_drug_prompt: "Укажи препарат (например: Новорапид, Лантус) или пропусти:"
+insulin_btn_skip_drug: "Пропустить"
+insulin_saved: "✅ Инсулин записан:\n💉 %s ед. (%s)%s"
+insulin_drug_suffix: "\nПрепарат: %s"
+insulin_type_bolus: "болюс"
+insulin_type_basal: "базовый"
+
 # Ошибки
 error_internal: "Произошла внутренняя ошибка. Попробуй позже."

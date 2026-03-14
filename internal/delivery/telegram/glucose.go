@@ -69,7 +69,7 @@ func (h *Handler) handleGlucoseStep(ctx context.Context, msg *tgbotapi.Message, 
 	)
 }
 
-// handleLastCb показывает последние 5 записей (глюкоза + еда, смешанная лента).
+// handleLastCb показывает последние 5 записей (глюкоза + еда + инсулин, смешанная лента).
 func (h *Handler) handleLastCb(ctx context.Context, cb *tgbotapi.CallbackQuery) {
 	user, _, err := h.userUC.GetProfile(ctx, domain.ProviderTelegram, strconv.FormatInt(cb.From.ID, 10))
 	if err != nil || user == nil {
@@ -92,13 +92,20 @@ func (h *Handler) handleLastCb(ctx context.Context, cb *tgbotapi.CallbackQuery) 
 		return
 	}
 
-	if len(glucReadings) == 0 && len(foodEntries) == 0 {
+	insulinDoses, err := h.insulinUC.GetLastDoses(ctx, user.ID, 5)
+	if err != nil {
+		h.log.Error("handleLastCb: failed to get insulin doses", zap.Error(err))
+		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
+		return
+	}
+
+	if len(glucReadings) == 0 && len(foodEntries) == 0 && len(insulinDoses) == 0 {
 		h.replyWithKeyboard(cb.Message.Chat.ID, h.loc.T("last_empty_short"), h.backToMenuKeyboard())
 		return
 	}
 
 	unitsLabel := h.unitsLabel(string(user.Units))
-	rows := buildMixedHistory(glucReadings, foodEntries, user.Units, unitsLabel, 5)
+	rows := buildMixedHistory(glucReadings, foodEntries, insulinDoses, user.Units, unitsLabel, 5)
 
 	var sb strings.Builder
 	sb.WriteString(h.loc.T("last_header"))
@@ -111,19 +118,20 @@ func (h *Handler) handleLastCb(ctx context.Context, cb *tgbotapi.CallbackQuery) 
 	h.replyWithKeyboard(cb.Message.Chat.ID, sb.String(), h.backToMenuKeyboard())
 }
 
-// buildMixedHistory merges glucose readings and food entries, sorts by time descending,
-// and returns at most `limit` formatted rows.
-// On equal timestamps, glucose sorts before food.
+// buildMixedHistory merges glucose readings, food entries, and insulin doses,
+// sorts by time descending, and returns at most `limit` formatted rows.
+// On equal timestamps, glucose sorts before food before insulin.
 func buildMixedHistory(
 	glucReadings []domain.GlucoseReading,
 	foodEntries []domain.FoodEntry,
+	insulinDoses []domain.InsulinDose,
 	units domain.Units,
 	unitsLabel string,
 	limit int,
 ) []string {
 	type entry struct {
 		t    int64 // unix timestamp for sorting
-		kind int   // 0 = glucose (sorts first on tie), 1 = food
+		kind int   // 0 = glucose, 1 = food, 2 = insulin
 		text string
 	}
 
@@ -142,6 +150,14 @@ func buildMixedHistory(
 			t:    e.EatenAt.Unix(),
 			kind: 1,
 			text: formatFoodRow(e),
+		})
+	}
+
+	for _, d := range insulinDoses {
+		all = append(all, entry{
+			t:    d.RecordedAt.Unix(),
+			kind: 2,
+			text: formatInsulinRow(d),
 		})
 	}
 
@@ -178,4 +194,13 @@ func formatFoodRow(e domain.FoodEntry) string {
 	}
 	return "  " + e.EatenAt.Format("02.01 15:04") + " — 🍽 " +
 		fooduc.FormatCarbs(e.CarbsGrams) + "г" + note
+}
+
+func formatInsulinRow(d domain.InsulinDose) string {
+	drug := ""
+	if d.Drug != "" {
+		drug = " (" + d.Drug + ")"
+	}
+	return "  " + d.RecordedAt.Format("02.01 15:04") + " — 💉 " +
+		formatDoseUnits(d.DoseUnits) + " ед. " + string(d.InsulinType) + drug
 }
