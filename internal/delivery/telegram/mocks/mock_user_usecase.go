@@ -74,6 +74,20 @@ func (mr *MockUserUseCaseMockRecorder) GetProfile(ctx, provider, externalID any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfile", reflect.TypeOf((*MockUserUseCase)(nil).GetProfile), ctx, provider, externalID)
 }
 
+// UpdateCarbsPerUnit mocks base method.
+func (m *MockUserUseCase) UpdateCarbsPerUnit(ctx context.Context, userID int64, grams float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCarbsPerUnit", ctx, userID, grams)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCarbsPerUnit indicates an expected call of UpdateCarbsPerUnit.
+func (mr *MockUserUseCaseMockRecorder) UpdateCarbsPerUnit(ctx, userID, grams any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCarbsPerUnit", reflect.TypeOf((*MockUserUseCase)(nil).UpdateCarbsPerUnit), ctx, userID, grams)
+}
+
 // UpdateUnits mocks base method.
 func (m *MockUserUseCase) UpdateUnits(ctx context.Context, userID int64, units domain.Units) error {
 	m.ctrl.T.Helper()

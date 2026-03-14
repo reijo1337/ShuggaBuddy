@@ -23,8 +23,8 @@ func NewUserRepo(pool *pgxpool.Pool) *UserRepo {
 func (r *UserRepo) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	u := &domain.User{}
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, units, created_at FROM users WHERE id = $1`, id,
-	).Scan(&u.ID, &u.Units, &u.CreatedAt)
+		`SELECT id, units, carbs_per_unit, created_at FROM users WHERE id = $1`, id,
+	).Scan(&u.ID, &u.Units, &u.CarbsPerUnit, &u.CreatedAt)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -38,13 +38,12 @@ func (r *UserRepo) GetByID(ctx context.Context, id int64) (*domain.User, error) 
 
 func (r *UserRepo) Create(ctx context.Context, user *domain.User) error {
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO users (units) VALUES ($1) RETURNING id`,
-		user.Units,
+		`INSERT INTO users (units, carbs_per_unit) VALUES ($1, $2) RETURNING id`,
+		user.Units, user.CarbsPerUnit,
 	).Scan(&user.ID)
 	if err != nil {
 		return fmt.Errorf("UserRepo.Create: %w", err)
 	}
-
 	return nil
 }
 
@@ -57,5 +56,16 @@ func (r *UserRepo) UpdateUnits(ctx context.Context, id int64, units domain.Units
 		return fmt.Errorf("UserRepo.UpdateUnits: %w", err)
 	}
 
+	return nil
+}
+
+func (r *UserRepo) UpdateCarbsPerUnit(ctx context.Context, id int64, grams float64) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET carbs_per_unit = $1 WHERE id = $2`,
+		grams, id,
+	)
+	if err != nil {
+		return fmt.Errorf("UserRepo.UpdateCarbsPerUnit: %w", err)
+	}
 	return nil
 }

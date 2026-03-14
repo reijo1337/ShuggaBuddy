@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram"
-	"github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram/mocks"
+	tgmocks "github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram/mocks"
 	"github.com/gmtantsevov/shuggabuddy/internal/domain"
 	"github.com/gmtantsevov/shuggabuddy/internal/i18n"
 )
@@ -55,12 +55,13 @@ func newTestHandler(
 	bot *spyBot,
 	userUC telegram.UserUseCase,
 	glucUC telegram.GlucoseUseCase,
+	foodUC telegram.FoodUseCase,
 	loc *i18n.Localizer,
 ) *telegram.Handler {
-	return telegram.NewHandler(bot, userUC, glucUC, loc, zap.NewNop())
+	return telegram.NewHandler(bot, userUC, glucUC, foodUC, loc, zap.NewNop())
 }
 
-func testMessage(userID int64, chatID int64, text string) *tgbotapi.Message {
+func testMessage(userID, chatID int64, text string) *tgbotapi.Message {
 	return &tgbotapi.Message{
 		From: &tgbotapi.User{ID: userID, FirstName: "Test"},
 		Chat: &tgbotapi.Chat{ID: chatID},
@@ -68,7 +69,7 @@ func testMessage(userID int64, chatID int64, text string) *tgbotapi.Message {
 	}
 }
 
-func testCallback(userID int64, chatID int64, data string) *tgbotapi.CallbackQuery {
+func testCallback(userID, chatID int64, data string) *tgbotapi.CallbackQuery {
 	return &tgbotapi.CallbackQuery{
 		ID:   "cb_1",
 		From: &tgbotapi.User{ID: userID, FirstName: "Test"},
@@ -80,9 +81,10 @@ func testCallback(userID int64, chatID int64, data string) *tgbotapi.CallbackQue
 }
 
 var testUser = &domain.User{
-	ID:        1,
-	Units:     domain.UnitsMmol,
-	CreatedAt: time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+	ID:           1,
+	Units:        domain.UnitsMmol,
+	CarbsPerUnit: 12,
+	CreatedAt:    time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
 }
 
 var testAcc = &domain.ExternalAccount{
@@ -100,13 +102,14 @@ func TestHandleStart_NewUser(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
 		GetOrCreateUser(gomock.Any(), domain.ProviderTelegram, "123", "Test").
 		Return(testUser, testAcc, true, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 
 	msg := testMessage(123, 456, "/start")
 	msg.Entities = []tgbotapi.MessageEntity{{Type: "bot_command", Length: 6}}
@@ -125,13 +128,14 @@ func TestHandleStart_ExistingUser(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
 		GetOrCreateUser(gomock.Any(), domain.ProviderTelegram, "123", "Test").
 		Return(testUser, testAcc, false, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 
 	msg := testMessage(123, 456, "/start")
 	msg.Entities = []tgbotapi.MessageEntity{{Type: "bot_command", Length: 6}}
@@ -148,13 +152,14 @@ func TestHandleStart_Error(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
 		GetOrCreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil, nil, false, errors.New("db error"))
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 
 	msg := testMessage(123, 456, "/start")
 	msg.Entities = []tgbotapi.MessageEntity{{Type: "bot_command", Length: 6}}
@@ -171,13 +176,14 @@ func TestHandleCallback_Profile(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
 		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:profile"))
 
 	require.Len(t, bot.sent, 1)
@@ -192,13 +198,14 @@ func TestHandleCallback_Profile_Error(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
 		GetProfile(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil, nil, errors.New("db error"))
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:profile"))
 
 	require.Len(t, bot.sent, 1)
@@ -212,9 +219,10 @@ func TestHandleCallback_SetUnits(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:units"))
 
 	require.Len(t, bot.sent, 1)
@@ -234,6 +242,7 @@ func TestHandleCallback_SetUnitsMmol(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
@@ -243,7 +252,7 @@ func TestHandleCallback_SetUnitsMmol(t *testing.T) {
 		UpdateUnits(gomock.Any(), int64(1), domain.UnitsMmol).
 		Return(nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "units:mmol"))
 
 	require.Len(t, bot.sent, 1)
@@ -257,6 +266,7 @@ func TestHandleCallback_SetUnitsMgdl(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
@@ -266,7 +276,7 @@ func TestHandleCallback_SetUnitsMgdl(t *testing.T) {
 		UpdateUnits(gomock.Any(), int64(1), domain.UnitsMgdl).
 		Return(nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "units:mgdl"))
 
 	require.Len(t, bot.sent, 1)
@@ -280,6 +290,7 @@ func TestHandleCallback_SetUnits_UpdateError(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
@@ -289,7 +300,7 @@ func TestHandleCallback_SetUnits_UpdateError(t *testing.T) {
 		UpdateUnits(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(errors.New("db error"))
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "units:mmol"))
 
 	require.Len(t, bot.sent, 1)
@@ -303,9 +314,10 @@ func TestHandleCallback_GlucoseStart(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:glucose"))
 
 	require.Len(t, bot.sent, 1)
@@ -322,6 +334,7 @@ func TestHandleGlucoseInput_Valid(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
@@ -331,8 +344,9 @@ func TestHandleGlucoseInput_Valid(t *testing.T) {
 		SaveReading(gomock.Any(), int64(1), 5.4, domain.UnitsMmol).
 		Return(nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
-	h.HandleGlucoseInput(context.Background(), testMessage(123, 456, "5.4"))
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	sess := telegram.NewSession(telegram.SessionGlucose, telegram.StepGlucoseValue)
+	h.HandleSessionInput(context.Background(), testMessage(123, 456, "5.4"), sess)
 
 	require.Len(t, bot.sent, 1)
 	sent := bot.lastMessage()
@@ -346,10 +360,12 @@ func TestHandleGlucoseInput_InvalidText(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
-	h.HandleGlucoseInput(context.Background(), testMessage(123, 456, "abc"))
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	sess := telegram.NewSession(telegram.SessionGlucose, telegram.StepGlucoseValue)
+	h.HandleSessionInput(context.Background(), testMessage(123, 456, "abc"), sess)
 
 	require.Len(t, bot.sent, 1)
 	assert.Contains(t, bot.lastMessage().Text, "Некорректное значение")
@@ -360,6 +376,7 @@ func TestHandleGlucoseInput_OutOfRange(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
@@ -369,8 +386,9 @@ func TestHandleGlucoseInput_OutOfRange(t *testing.T) {
 		SaveReading(gomock.Any(), int64(1), 50.0, domain.UnitsMmol).
 		Return(errors.New("out of range"))
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
-	h.HandleGlucoseInput(context.Background(), testMessage(123, 456, "50.0"))
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	sess := telegram.NewSession(telegram.SessionGlucose, telegram.StepGlucoseValue)
+	h.HandleSessionInput(context.Background(), testMessage(123, 456, "50.0"), sess)
 
 	require.Len(t, bot.sent, 1)
 	assert.Contains(t, bot.lastMessage().Text, "вне допустимого диапазона")
@@ -381,6 +399,7 @@ func TestHandleGlucoseInput_OutOfRange_Mgdl(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	mgdlUser := &domain.User{ID: 1, Units: domain.UnitsMgdl}
@@ -392,8 +411,9 @@ func TestHandleGlucoseInput_OutOfRange_Mgdl(t *testing.T) {
 		SaveReading(gomock.Any(), int64(1), 700.0, domain.UnitsMgdl).
 		Return(errors.New("out of range"))
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
-	h.HandleGlucoseInput(context.Background(), testMessage(123, 456, "700"))
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	sess := telegram.NewSession(telegram.SessionGlucose, telegram.StepGlucoseValue)
+	h.HandleSessionInput(context.Background(), testMessage(123, 456, "700"), sess)
 
 	require.Len(t, bot.sent, 1)
 	assert.Contains(t, bot.lastMessage().Text, "мг/дл")
@@ -406,6 +426,7 @@ func TestHandleCallback_Last(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	readings := []domain.GlucoseReading{
@@ -419,8 +440,11 @@ func TestHandleCallback_Last(t *testing.T) {
 	glucUC.EXPECT().
 		GetLastReadings(gomock.Any(), int64(1), 5).
 		Return(readings, nil)
+	foodUC.EXPECT().
+		GetLastEntries(gomock.Any(), int64(1), 5).
+		Return(nil, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:last"))
 
 	require.Len(t, bot.sent, 1)
@@ -435,6 +459,7 @@ func TestHandleCallback_Last_Empty(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
@@ -443,8 +468,11 @@ func TestHandleCallback_Last_Empty(t *testing.T) {
 	glucUC.EXPECT().
 		GetLastReadings(gomock.Any(), int64(1), 5).
 		Return(nil, nil)
+	foodUC.EXPECT().
+		GetLastEntries(gomock.Any(), int64(1), 5).
+		Return(nil, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:last"))
 
 	require.Len(t, bot.sent, 1)
@@ -458,29 +486,31 @@ func TestHandleCallback_Back(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
 		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:back"))
 
 	require.Len(t, bot.sent, 1)
 	sent := bot.lastMessage()
 	assert.Contains(t, sent.Text, "Выбери действие:")
 	kb := sent.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
-	assert.Len(t, kb.InlineKeyboard, 4)
+	assert.Len(t, kb.InlineKeyboard, 6)
 }
 
 // --- Waiting glucose state ---
 
-func TestHandleCallback_Back_ClearsWaitingState(t *testing.T) {
+func TestHandleCallback_Back_ClearsSession(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	userUC.EXPECT().
@@ -488,7 +518,7 @@ func TestHandleCallback_Back_ClearsWaitingState(t *testing.T) {
 		Return(testUser, testAcc, nil).
 		Times(1)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 
 	// Активируем ожидание ввода глюкозы.
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:glucose"))
@@ -507,6 +537,7 @@ func TestMenuKeyboard_ContainsCurrentUnits(t *testing.T) {
 	bot := &spyBot{}
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
 	mgdlUser := &domain.User{ID: 1, Units: domain.UnitsMgdl}
@@ -515,7 +546,7 @@ func TestMenuKeyboard_ContainsCurrentUnits(t *testing.T) {
 		GetOrCreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(mgdlUser, testAcc, false, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
 	msg := testMessage(123, 456, "/start")
 	msg.Entities = []tgbotapi.MessageEntity{{Type: "bot_command", Length: 6}}
 	h.HandleStart(context.Background(), msg)
@@ -525,4 +556,207 @@ func TestMenuKeyboard_ContainsCurrentUnits(t *testing.T) {
 	kb := sent.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
 	unitsBtn := kb.InlineKeyboard[1][0]
 	assert.Contains(t, unitsBtn.Text, "мг/дл")
+}
+
+// --- Food flow ---
+
+func TestHandleCallback_FoodStart(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	bot := &spyBot{}
+	userUC := tgmocks.NewMockUserUseCase(ctrl)
+	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
+	loc := newTestLocalizer(t)
+
+	userUC.EXPECT().
+		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
+		Return(testUser, testAcc, nil)
+
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:food"))
+
+	require.Len(t, bot.sent, 1)
+	sent := bot.lastMessage()
+	assert.Contains(t, sent.Text, "Сколько углеводов?")
+	kb := sent.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
+	// First row: unit toggle [г ✓] [ХЕ]
+	assert.Equal(t, "food:unit:g", *kb.InlineKeyboard[0][0].CallbackData)
+	assert.Equal(t, "food:unit:xe", *kb.InlineKeyboard[0][1].CallbackData)
+}
+
+func TestHandleFoodCarbsInput_Valid_Grams(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	bot := &spyBot{}
+	userUC := tgmocks.NewMockUserUseCase(ctrl)
+	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
+	loc := newTestLocalizer(t)
+
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	sess := telegram.NewSession(telegram.SessionFood, telegram.StepFoodCarbs)
+	sess.Data["carbs_unit"] = "g"
+
+	h.HandleSessionInput(context.Background(), testMessage(123, 456, "60"), sess)
+
+	require.Len(t, bot.sent, 1)
+	assert.Contains(t, bot.lastMessage().Text, "заметку")
+}
+
+func TestHandleFoodCarbsInput_Valid_XE(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	bot := &spyBot{}
+	userUC := tgmocks.NewMockUserUseCase(ctrl)
+	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
+	loc := newTestLocalizer(t)
+
+	userUC.EXPECT().
+		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
+		Return(testUser, testAcc, nil)
+
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	sess := telegram.NewSession(telegram.SessionFood, telegram.StepFoodCarbs)
+	sess.Data["carbs_unit"] = "xe"
+
+	// 5 XE * 12 g/XE = 60g — within range
+	h.HandleSessionInput(context.Background(), testMessage(123, 456, "5"), sess)
+
+	require.Len(t, bot.sent, 1)
+	assert.Contains(t, bot.lastMessage().Text, "заметку")
+}
+
+func TestHandleFoodCarbsInput_InvalidText(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	bot := &spyBot{}
+	userUC := tgmocks.NewMockUserUseCase(ctrl)
+	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
+	loc := newTestLocalizer(t)
+
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	sess := telegram.NewSession(telegram.SessionFood, telegram.StepFoodCarbs)
+	sess.Data["carbs_unit"] = "g"
+
+	h.HandleSessionInput(context.Background(), testMessage(123, 456, "abc"), sess)
+
+	require.Len(t, bot.sent, 1)
+	assert.Contains(t, bot.lastMessage().Text, "Некорректное значение")
+}
+
+func TestHandleFoodTimeInput_ValidFormats(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"HH:MM", "13:45"},
+		{"DD.MM HH:MM", "02.03 13:45"},
+		{"DD.MM.YYYY HH:MM", "02.03.2025 13:45"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			bot := &spyBot{}
+			userUC := tgmocks.NewMockUserUseCase(ctrl)
+			glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+			foodUC := tgmocks.NewMockFoodUseCase(ctrl)
+			loc := newTestLocalizer(t)
+
+			userUC.EXPECT().
+				GetProfile(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(testUser, testAcc, nil)
+			foodUC.EXPECT().
+				SaveEntry(gomock.Any(), int64(1), float64(60), "", gomock.Any()).
+				Return(nil)
+
+			h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+			sess := telegram.NewSession(telegram.SessionFood, telegram.StepFoodTime)
+			sess.Data["carbs_grams"] = float64(60)
+			sess.Data["note"] = ""
+
+			h.HandleSessionInput(context.Background(), testMessage(123, 456, tt.input), sess)
+
+			require.Len(t, bot.sent, 1)
+			assert.Contains(t, bot.lastMessage().Text, "Записано")
+		})
+	}
+}
+
+func TestHandleFoodTimeInput_InvalidFormat(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	bot := &spyBot{}
+	userUC := tgmocks.NewMockUserUseCase(ctrl)
+	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
+	loc := newTestLocalizer(t)
+
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	sess := telegram.NewSession(telegram.SessionFood, telegram.StepFoodTime)
+	sess.Data["carbs_grams"] = float64(60)
+	sess.Data["note"] = ""
+
+	h.HandleSessionInput(context.Background(), testMessage(123, 456, "not-a-time"), sess)
+
+	require.Len(t, bot.sent, 1)
+	assert.Contains(t, bot.lastMessage().Text, "Не удалось распознать")
+}
+
+func TestHandleCallback_Last_MixedFeed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	bot := &spyBot{}
+	userUC := tgmocks.NewMockUserUseCase(ctrl)
+	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
+	loc := newTestLocalizer(t)
+
+	glucReadings := []domain.GlucoseReading{
+		{ID: 1, UserID: 1, ValueMmol: 5.4, RecordedAt: time.Date(2025, 3, 10, 14, 30, 0, 0, time.UTC)},
+	}
+	foodEntries := []domain.FoodEntry{
+		{ID: 1, UserID: 1, CarbsGrams: 60.0, Note: "гречка", EatenAt: time.Date(2025, 3, 10, 13, 45, 0, 0, time.UTC)},
+	}
+
+	userUC.EXPECT().
+		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
+		Return(testUser, testAcc, nil)
+	glucUC.EXPECT().
+		GetLastReadings(gomock.Any(), int64(1), 5).
+		Return(glucReadings, nil)
+	foodUC.EXPECT().
+		GetLastEntries(gomock.Any(), int64(1), 5).
+		Return(foodEntries, nil)
+
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:last"))
+
+	require.Len(t, bot.sent, 1)
+	text := bot.lastMessage().Text
+	assert.Contains(t, text, "🩸")
+	assert.Contains(t, text, "🍽")
+	assert.Contains(t, text, "5.4")
+	assert.Contains(t, text, "60")
+	assert.Contains(t, text, "гречка")
+}
+
+func TestHandleCallback_CarbsUnit_SetPreset(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	bot := &spyBot{}
+	userUC := tgmocks.NewMockUserUseCase(ctrl)
+	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
+	foodUC := tgmocks.NewMockFoodUseCase(ctrl)
+	loc := newTestLocalizer(t)
+
+	userUC.EXPECT().
+		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
+		Return(testUser, testAcc, nil)
+	userUC.EXPECT().
+		UpdateCarbsPerUnit(gomock.Any(), int64(1), 10.0).
+		Return(nil)
+
+	h := newTestHandler(bot, userUC, glucUC, foodUC, loc)
+	h.HandleCallback(context.Background(), testCallback(123, 456, "carbs_unit:10"))
+
+	require.Len(t, bot.sent, 1)
+	sent := bot.lastMessage()
+	assert.Contains(t, sent.Text, "1 ХЕ = 10г")
 }
