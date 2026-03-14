@@ -31,7 +31,7 @@ func (uc *UseCase) GetOrCreateUser(ctx context.Context, provider domain.Provider
 		return u, acc, false, nil
 	}
 
-	u := &domain.User{Units: domain.UnitsMmol}
+	u := &domain.User{Units: domain.UnitsMmol, CarbsPerUnit: 12}
 	if err := uc.userRepo.Create(ctx, u); err != nil {
 		return nil, nil, false, fmt.Errorf("user.GetOrCreateUser: %w", err)
 	}
@@ -74,6 +74,20 @@ func (uc *UseCase) UpdateUnits(ctx context.Context, id int64, units domain.Units
 
 	if err := uc.userRepo.UpdateUnits(ctx, id, units); err != nil {
 		return fmt.Errorf("user.UpdateUnits: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateCarbsPerUnit updates how many grams of carbohydrates equal 1 bread unit (XE).
+// grams must be in [1, 50].
+func (uc *UseCase) UpdateCarbsPerUnit(ctx context.Context, id int64, grams float64) error {
+	if grams < 1.0 || grams > 50.0 {
+		return fmt.Errorf("user.UpdateCarbsPerUnit: grams %.1f out of range [1–50]", grams)
+	}
+
+	if err := uc.userRepo.UpdateCarbsPerUnit(ctx, id, grams); err != nil {
+		return fmt.Errorf("user.UpdateCarbsPerUnit: %w", err)
 	}
 
 	return nil

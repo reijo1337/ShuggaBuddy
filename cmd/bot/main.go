@@ -13,6 +13,7 @@ import (
 	"github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram"
 	"github.com/gmtantsevov/shuggabuddy/internal/i18n"
 	"github.com/gmtantsevov/shuggabuddy/internal/repository/postgres"
+	"github.com/gmtantsevov/shuggabuddy/internal/usecase/food"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/glucose"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/user"
 	"github.com/gmtantsevov/shuggabuddy/pkg/config"
@@ -63,11 +64,13 @@ func main() {
 	userRepo := postgres.NewUserRepo(pool)
 	extAccRepo := postgres.NewExternalAccountRepo(pool)
 	glucoseRepo := postgres.NewGlucoseRepo(pool)
+	foodRepo := postgres.NewFoodRepo(pool)
 
 	userUC := user.New(userRepo, extAccRepo)
 	glucoseUC := glucose.New(glucoseRepo)
+	foodUC := food.New(foodRepo)
 
-	handler := telegram.NewHandler(bot, userUC, glucoseUC, loc, log)
+	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, loc, log)
 
 	log.Info("starting bot...")
 	handler.Run(ctx)

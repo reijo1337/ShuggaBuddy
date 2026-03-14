@@ -251,3 +251,54 @@ func TestUpdateUnits_RepoError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "db error")
 }
+
+func TestUpdateCarbsPerUnit_Valid(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := mocks.NewMockUserRepository(ctrl)
+	extAccRepo := mocks.NewMockExternalAccountRepository(ctrl)
+
+	userRepo.EXPECT().
+		UpdateCarbsPerUnit(gomock.Any(), int64(1), 10.0).
+		Return(nil)
+
+	uc := user.New(userRepo, extAccRepo)
+	err := uc.UpdateCarbsPerUnit(context.Background(), 1, 10.0)
+	require.NoError(t, err)
+}
+
+func TestUpdateCarbsPerUnit_TooLow(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := mocks.NewMockUserRepository(ctrl)
+	extAccRepo := mocks.NewMockExternalAccountRepository(ctrl)
+
+	uc := user.New(userRepo, extAccRepo)
+	err := uc.UpdateCarbsPerUnit(context.Background(), 1, 0.5)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "out of range")
+}
+
+func TestUpdateCarbsPerUnit_TooHigh(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := mocks.NewMockUserRepository(ctrl)
+	extAccRepo := mocks.NewMockExternalAccountRepository(ctrl)
+
+	uc := user.New(userRepo, extAccRepo)
+	err := uc.UpdateCarbsPerUnit(context.Background(), 1, 51.0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "out of range")
+}
+
+func TestUpdateCarbsPerUnit_RepoError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := mocks.NewMockUserRepository(ctrl)
+	extAccRepo := mocks.NewMockExternalAccountRepository(ctrl)
+
+	userRepo.EXPECT().
+		UpdateCarbsPerUnit(gomock.Any(), int64(1), 12.0).
+		Return(errors.New("db error"))
+
+	uc := user.New(userRepo, extAccRepo)
+	err := uc.UpdateCarbsPerUnit(context.Background(), 1, 12.0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "db error")
+}

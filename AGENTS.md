@@ -97,7 +97,7 @@ delivery → usecase → domain ← repository
 
 ## Workflows
 
-При любых работах не нужно ничего коммитить.
+**Важно**: При любых задачах не нужно ничего коммитить.
 
 ### New Bot Action (inline-кнопка)
 

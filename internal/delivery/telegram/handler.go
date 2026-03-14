@@ -3,6 +3,7 @@ package telegram
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -16,17 +17,19 @@ type Handler struct {
 	bot    BotAPI
 	userUC UserUseCase
 	glucUC GlucoseUseCase
+	foodUC FoodUseCase
 	loc    *i18n.Localizer
 	log    *zap.Logger
 
-	// waitingGlucose хранит chat ID пользователей, ожидающих ввод уровня сахара.
-	waitingGlucose sync.Map
+	// sessions хранит активные диалоговые сессии, ключ — chat ID.
+	sessions sync.Map
 }
 
 func NewHandler(
 	bot BotAPI,
 	userUC UserUseCase,
 	glucUC GlucoseUseCase,
+	foodUC FoodUseCase,
 	loc *i18n.Localizer,
 	log *zap.Logger,
 ) *Handler {
@@ -34,6 +37,7 @@ func NewHandler(
 		bot:    bot,
 		userUC: userUC,
 		glucUC: glucUC,
+		foodUC: foodUC,
 		loc:    loc,
 		log:    log,
 	}
@@ -65,12 +69,24 @@ func (h *Handler) Run(ctx context.Context) {
 				continue
 			}
 
-			// Обработка текстового ввода уровня сахара.
-			if _, ok := h.waitingGlucose.Load(update.Message.Chat.ID); ok {
-				h.handleGlucoseInput(ctx, update.Message)
+			// Route text to the active session for this chat, if any.
+			if sess, ok := h.sessions.Load(update.Message.Chat.ID); ok {
+				h.handleSessionInput(ctx, update.Message, sess.(*Session))
 				continue
 			}
 		}
+	}
+}
+
+// handleSessionInput dispatches text input to the correct flow based on session type.
+func (h *Handler) handleSessionInput(ctx context.Context, msg *tgbotapi.Message, sess *Session) {
+	switch sess.SType {
+	case sessionGlucose:
+		h.handleGlucoseStep(ctx, msg, sess)
+	case sessionFood:
+		h.handleFoodStep(ctx, msg, sess)
+	case sessionCarbsUnit:
+		h.handleCarbsUnitStep(ctx, msg, sess)
 	}
 }
 
@@ -91,7 +107,9 @@ func (h *Handler) replyWithKeyboard(chatID int64, text string, keyboard tgbotapi
 	}
 }
 
-func (h *Handler) menuKeyboard(unitsLabel string) tgbotapi.InlineKeyboardMarkup {
+// menuKeyboard builds the main menu. unitsLabel is the display string for glucose units.
+// carbsPerUnit is the display string for the ХЕ setting button (e.g. "12").
+func (h *Handler) menuKeyboard(unitsLabel, carbsPerUnit string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_profile"), "menu:profile"),
@@ -102,7 +120,15 @@ func (h *Handler) menuKeyboard(unitsLabel string) tgbotapi.InlineKeyboardMarkup 
 			),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				h.loc.T("btn_carbs_unit", carbsPerUnit), "menu:carbs_unit",
+			),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_glucose"), "menu:glucose"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_food"), "menu:food"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_last"), "menu:last"),
@@ -118,8 +144,8 @@ func (h *Handler) backToMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
-func (h *Handler) sendMenu(chatID int64, text string, unitsLabel string) {
-	h.replyWithKeyboard(chatID, text, h.menuKeyboard(unitsLabel))
+func (h *Handler) sendMenu(chatID int64, text, unitsLabel, carbsPerUnit string) {
+	h.replyWithKeyboard(chatID, text, h.menuKeyboard(unitsLabel, carbsPerUnit))
 }
 
 func (h *Handler) unitsLabel(units string) string {
@@ -127,4 +153,10 @@ func (h *Handler) unitsLabel(units string) string {
 		return h.loc.T("units_mgdl")
 	}
 	return h.loc.T("units_mmol")
+}
+
+// carbsPerUnitLabel formats the carbs-per-unit value for display (strips trailing zeros).
+// Uses strconv.FormatFloat with 'f' format and prec=-1 (same as FormatCarbs in food usecase).
+func carbsPerUnitLabel(grams float64) string {
+	return strconv.FormatFloat(grams, 'f', -1, 64)
 }

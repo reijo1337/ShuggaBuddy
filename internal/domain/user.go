@@ -18,9 +18,10 @@ const MmolToMgdl = 18.0182
 
 // User представляет профиль пользователя бота.
 type User struct {
-	ID        int64     `json:"id"`
-	Units     Units     `json:"units"`
-	CreatedAt time.Time `json:"created_at"`
+	ID           int64     `json:"id"`
+	Units        Units     `json:"units"`
+	CarbsPerUnit float64   `json:"carbs_per_unit"` // grams of carbs per 1 bread unit (ХЕ), default 12
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type Provider string
@@ -43,6 +44,7 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id int64) (*User, error)
 	Create(ctx context.Context, user *User) error
 	UpdateUnits(ctx context.Context, id int64, units Units) error
+	UpdateCarbsPerUnit(ctx context.Context, id int64, grams float64) error
 }
 
 //go:generate mockgen -destination=mocks/mock_external_account_repository.go -package=mocks . ExternalAccountRepository

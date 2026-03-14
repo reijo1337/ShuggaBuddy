@@ -1,27 +1,24 @@
-# Приветствие
-welcome: "Привет, %s! Я ShuggaBuddy — твой карманный помощник для контроля диабета 1 типа."
-welcome_back: "С возвращением, %s!"
-
 # Главное меню
 menu_title: "Выбери действие:"
 btn_profile: "👤 Профиль"
 btn_units: "📏 Единицы: %s"
+btn_carbs_unit: "🧮 ХЕ: %sг"
 btn_glucose: "🩸 Новая запись"
+btn_food: "🍽 Записать еду"
 btn_last: "📋 Последние 5 записей"
 btn_back_menu: "◀️ В меню"
+units_gram_suffix: "г"
 
-# Профиль
-profile: |
-  Твой профиль:
-  Имя: %s
-  Единицы: %s
-  Дата регистрации: %s
-units_mmol: "ммоль/л"
-units_mgdl: "мг/дл"
+# Профиль и приветствие
+welcome: "Привет, %s! 👋 Ты зарегистрирован в ShuggaBuddy."
+welcome_back: "С возвращением, %s! 👋"
+profile: "👤 Профиль\nИмя: %s\nЕдиницы: %s\nДата регистрации: %s"
 
 # Единицы измерения
 setunits_prompt: "Выбери единицы измерения:"
-setunits_success: "Единицы измерения изменены на %s."
+setunits_success: "Единицы изменены на %s."
+units_mmol: "ммоль/л"
+units_mgdl: "мг/дл"
 
 # Глюкоза
 glucose_saved: "Записано: %s %s"
@@ -30,10 +27,39 @@ glucose_invalid_short: "Некорректное значение. Введи ч
 glucose_out_of_range_mmol: "Значение вне допустимого диапазона (1.0–33.3 ммоль/л)."
 glucose_out_of_range_mgdl: "Значение вне допустимого диапазона (18–600 мг/дл)."
 
-# Последние записи
+# Еда
+food_prompt_carbs: "Сколько углеводов?"
+food_toggle_g: "г ✓"
+food_toggle_xe: "ХЕ ✓"
+food_toggle_g_inactive: "г"
+food_toggle_xe_inactive: "ХЕ"
+food_prompt_note: "Добавь заметку или пропусти:"
+food_btn_skip: "Пропустить"
+food_prompt_time: "Когда поел?"
+food_btn_now: "Сейчас"
+food_btn_minus15: "-15 мин"
+food_btn_minus30: "-30 мин"
+food_btn_minus1h: "-1 час"
+food_btn_manual_time: "Ввести время"
+food_time_prompt: "Введи время: ЧЧ:ММ, ДД.ММ ЧЧ:ММ или ДД.ММ.ГГГГ ЧЧ:ММ"
+food_time_invalid: "Не удалось распознать время. Попробуй: 13:45, 02.03 13:45 или 02.03.2025 13:45"
+food_saved: "✅ Записано: %sг углеводов\nВремя: %s"
+food_saved_with_note: "✅ Записано: %sг углеводов\nВремя: %s\nЗаметка: %s"
+food_invalid_carbs: "Некорректное значение. Введи число, например: 60"
+food_out_of_range: "Значение должно быть от 0.1 до 500г."
+
+# Настройка ХЕ
+carbs_unit_prompt: "Выбери количество граммов в 1 ХЕ:"
+carbs_unit_saved: "Настройка ХЕ изменена: 1 ХЕ = %sг"
+carbs_unit_invalid: "Введи число от 1 до 50."
+carbs_unit_btn_custom: "Своё значение"
+carbs_unit_custom_prompt: "Введи количество граммов на 1 ХЕ (от 1 до 50):"
+
+# Последние записи (смешанная лента)
 last_empty_short: "Записей пока нет."
 last_header: "Последние записи:"
-last_row: "  %s — %s %s"
+last_glucose_row: "  %s — 🩸 %s %s"
+last_food_row: "  %s — 🍽 %sг%s"
 
 # Ошибки
 error_internal: "Произошла внутренняя ошибка. Попробуй позже."
