@@ -53,7 +53,7 @@ func (h *Handler) handleInsulinStep(ctx context.Context, msg *tgbotapi.Message, 
 		h.handleInsulinDoseInput(ctx, msg, sess)
 	case stepInsulinDrug:
 		h.handleInsulinDrugInput(ctx, msg, sess)
-	// stepInsulinType и stepInsulinConfirm ждут колбэков, текст игнорируем.
+		// stepInsulinType и stepInsulinConfirm ждут колбэков, текст игнорируем.
 	}
 }
 

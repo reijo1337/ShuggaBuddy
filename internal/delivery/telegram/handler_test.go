@@ -690,7 +690,7 @@ func TestHandleFoodTimeInput_ValidFormats(t *testing.T) {
 			userUC := tgmocks.NewMockUserUseCase(ctrl)
 			glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
 			foodUC := tgmocks.NewMockFoodUseCase(ctrl)
-	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
+			insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 			loc := newTestLocalizer(t)
 
 			userUC.EXPECT().
