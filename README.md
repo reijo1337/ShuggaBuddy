@@ -1,5 +1,8 @@
 # ShuggaBuddy
 
+[![CI](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/ci.yml/badge.svg)](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/ci.yml)
+[![Tests](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/test.yml/badge.svg)](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/test.yml)
+
 Telegram-бот — карманный помощник для людей с сахарным диабетом 1 типа.
 
 ## Функциональность
