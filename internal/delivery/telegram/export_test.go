@@ -42,9 +42,19 @@ const (
 	StepInsulinDose    = stepInsulinDose
 	StepInsulinConfirm = stepInsulinConfirm
 	StepInsulinDrug    = stepInsulinDrug
+
+	SessionActivity = sessionActivity
+
+	StepActivityType      = stepActivityType
+	StepActivityCustom    = stepActivityCustom
+	StepActivityDuration  = stepActivityDuration
+	StepActivityTime      = stepActivityTime
+	StepActivityIntensity = stepActivityIntensity
 )
 
 // SetSession stores a session directly for use in tests.
 func (h *Handler) SetSession(chatID int64, sess *Session) {
 	h.sessions.Store(chatID, sess)
 }
+
+var BuildMixedHistory = buildMixedHistory

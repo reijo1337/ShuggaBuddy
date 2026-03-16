@@ -50,3 +50,13 @@ type InsulinUseCase interface {
 	SaveDose(ctx context.Context, userID int64, dose float64, insulinType domain.InsulinType, drug string) error
 	GetLastDoses(ctx context.Context, userID int64, limit int) ([]domain.InsulinDose, error)
 }
+
+//go:generate mockgen -destination=mocks/mock_activity_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram ActivityUseCase
+
+// ActivityUseCase описывает бизнес-логику активности, необходимую delivery-слою.
+type ActivityUseCase interface {
+	SaveEntry(ctx context.Context, userID int64, activityType domain.ActivityType, customType string, durationMin int, intensity domain.Intensity, recordedAt time.Time, chatID int64) error
+	GetLastEntries(ctx context.Context, userID int64, limit int) ([]domain.ActivityEntry, error)
+	EvaluateImpact(activityType domain.ActivityType, durationMin int, intensity domain.Intensity) domain.GlycemicImpact
+	AnalyzeLastActivities(ctx context.Context, userID int64, limit int) ([]domain.ActivityAnalysis, error)
+}

@@ -8,6 +8,7 @@ const (
 	sessionFood      sessionType = "food"
 	sessionCarbsUnit sessionType = "carbs_unit"
 	sessionInsulin   sessionType = "insulin"
+	sessionActivity  sessionType = "activity"
 )
 
 // sessionStep identifies the current step within a session flow.
@@ -26,6 +27,12 @@ const (
 	stepInsulinDose    // ожидание ввода дозы текстом
 	stepInsulinConfirm // ожидание подтверждения аномальной дозы (callback)
 	stepInsulinDrug    // ожидание ввода препарата или пропуска
+
+	stepActivityType      // ожидание выбора типа активности (callback)
+	stepActivityCustom    // ожидание ввода произвольного типа текстом
+	stepActivityDuration  // ожидание ввода длительности
+	stepActivityTime      // ожидание выбора/ввода времени
+	stepActivityIntensity // ожидание выбора интенсивности (callback)
 )
 
 // Session holds the state of an in-progress multi-step dialog for a chat.

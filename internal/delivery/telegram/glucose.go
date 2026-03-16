@@ -99,13 +99,27 @@ func (h *Handler) handleLastCb(ctx context.Context, cb *tgbotapi.CallbackQuery) 
 		return
 	}
 
-	if len(glucReadings) == 0 && len(foodEntries) == 0 && len(insulinDoses) == 0 {
+	activityEntries, err := h.activityUC.GetLastEntries(ctx, user.ID, 5)
+	if err != nil {
+		h.log.Error("handleLastCb: failed to get activity entries", zap.Error(err))
+		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
+		return
+	}
+
+	if len(glucReadings) == 0 && len(foodEntries) == 0 && len(insulinDoses) == 0 && len(activityEntries) == 0 {
 		h.replyWithKeyboard(cb.Message.Chat.ID, h.loc.T("last_empty_short"), h.backToMenuKeyboard())
 		return
 	}
 
 	unitsLabel := h.unitsLabel(string(user.Units))
-	rows := buildMixedHistory(glucReadings, foodEntries, insulinDoses, user.Units, unitsLabel, 5)
+
+	activityRows := make([]string, len(activityEntries))
+	for i, e := range activityEntries {
+		typeLabel := h.activityTypeLabel(e.ActivityType, e.CustomType)
+		activityRows[i] = formatActivityRow(e, typeLabel)
+	}
+
+	rows := buildMixedHistory(glucReadings, foodEntries, insulinDoses, activityEntries, activityRows, user.Units, unitsLabel, 5)
 
 	var sb strings.Builder
 	sb.WriteString(h.loc.T("last_header"))
@@ -125,6 +139,8 @@ func buildMixedHistory(
 	glucReadings []domain.GlucoseReading,
 	foodEntries []domain.FoodEntry,
 	insulinDoses []domain.InsulinDose,
+	activityEntries []domain.ActivityEntry,
+	activityRows []string,
 	units domain.Units,
 	unitsLabel string,
 	limit int,
@@ -158,6 +174,18 @@ func buildMixedHistory(
 			t:    d.RecordedAt.Unix(),
 			kind: 2,
 			text: formatInsulinRow(d),
+		})
+	}
+
+	for i, e := range activityEntries {
+		text := ""
+		if i < len(activityRows) {
+			text = activityRows[i]
+		}
+		all = append(all, entry{
+			t:    e.RecordedAt.Unix(),
+			kind: 3,
+			text: text,
 		})
 	}
 

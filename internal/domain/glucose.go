@@ -19,4 +19,5 @@ type GlucoseReading struct {
 type GlucoseRepository interface {
 	Save(ctx context.Context, reading *GlucoseReading) error
 	GetLast(ctx context.Context, userID int64, limit int) ([]GlucoseReading, error)
+	GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]GlucoseReading, error)
 }

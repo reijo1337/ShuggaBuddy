@@ -13,6 +13,8 @@ import (
 	"github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram"
 	"github.com/gmtantsevov/shuggabuddy/internal/i18n"
 	"github.com/gmtantsevov/shuggabuddy/internal/repository/postgres"
+	"github.com/gmtantsevov/shuggabuddy/internal/scheduler"
+	"github.com/gmtantsevov/shuggabuddy/internal/usecase/activity"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/food"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/glucose"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/insulin"
@@ -20,6 +22,22 @@ import (
 	"github.com/gmtantsevov/shuggabuddy/pkg/config"
 	"github.com/gmtantsevov/shuggabuddy/pkg/logger"
 )
+
+// telegramMessenger adapts tgbotapi.BotAPI to scheduler.Messenger.
+type telegramMessenger struct {
+	bot *tgbotapi.BotAPI
+	log *zap.Logger
+}
+
+func (m *telegramMessenger) SendReminder(chatID int64, text string) error {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "Markdown"
+	_, err := m.bot.Send(msg)
+	if err != nil {
+		m.log.Error("failed to send reminder", zap.Error(err), zap.Int64("chat_id", chatID))
+	}
+	return err
+}
 
 func main() {
 	cfg, err := config.Load()
@@ -67,13 +85,20 @@ func main() {
 	glucoseRepo := postgres.NewGlucoseRepo(pool)
 	foodRepo := postgres.NewFoodRepo(pool)
 	insulinRepo := postgres.NewInsulinRepo(pool)
+	activityRepo := postgres.NewActivityRepo(pool)
+	reminderRepo := postgres.NewReminderRepo(pool)
 
 	userUC := user.New(userRepo, extAccRepo)
 	glucoseUC := glucose.New(glucoseRepo)
 	foodUC := food.New(foodRepo)
 	insulinUC := insulin.New(insulinRepo)
+	activityUC := activity.New(activityRepo, glucoseRepo, reminderRepo)
 
-	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, insulinUC, loc, log)
+	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, insulinUC, activityUC, loc, log)
+
+	messenger := &telegramMessenger{bot: bot, log: log}
+	reminderScheduler := scheduler.NewReminderScheduler(reminderRepo, activityRepo, glucoseRepo, messenger, log)
+	go reminderScheduler.Run(ctx)
 
 	log.Info("starting bot...")
 	handler.Run(ctx)

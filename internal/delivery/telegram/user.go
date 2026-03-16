@@ -52,6 +52,28 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 		h.log.Error("handleCallback: failed to answer callback", zap.Error(err))
 	}
 
+	// Activity prefix-based routing (before the main switch).
+	if strings.HasPrefix(cb.Data, "activity:type:") {
+		h.handleActivityTypeSelect(cb)
+		return
+	}
+	if strings.HasPrefix(cb.Data, "activity:dur:") {
+		h.handleActivityDurationQuick(ctx, cb)
+		return
+	}
+	if cb.Data == "activity:time:manual" {
+		h.handleActivityTimeManual(cb)
+		return
+	}
+	if strings.HasPrefix(cb.Data, "activity:time:") {
+		h.handleActivityTimeQuick(ctx, cb)
+		return
+	}
+	if strings.HasPrefix(cb.Data, "activity:intensity:") {
+		h.handleActivityIntensitySelect(cb)
+		return
+	}
+
 	switch cb.Data {
 	case "menu:back":
 		h.sessions.Delete(cb.Message.Chat.ID)
@@ -99,6 +121,12 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 	case "insulin:cancel":
 		h.sessions.Delete(cb.Message.Chat.ID)
 		h.handleMenuBack(ctx, cb)
+	case "menu:activity":
+		h.handleActivityStart(cb)
+	case "activity:history":
+		h.handleActivityHistory(ctx, cb)
+	case "menu:analytics":
+		h.handleAnalytics(ctx, cb)
 	}
 }
 
