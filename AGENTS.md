@@ -14,6 +14,24 @@ ShuggaBuddy — Telegram-бот, карманный помощник для лю
 
 **Локализация:** русский (единственный язык, архитектура готова к мультиязычности)
 
+## Commands
+
+```bash
+make run          # go run ./cmd/bot/main.go (требует .env)
+make build        # собрать бинарник в bin/shuggabuddy
+make test         # go test -v -race ./...
+make lint         # golangci-lint в Docker
+make fmt          # авто-форматирование через golangci-lint
+make migrate      # применить все миграции (goose)
+make migrate-down # откатить последнюю миграцию
+```
+
+Запустить один тест: `go test -v -run TestName ./internal/usecase/glucose/`
+
+Сгенерировать моки: `go generate ./...`
+
+Переменные окружения: см. `.env.example`.
+
 ---
 
 ## Bot Functionality
