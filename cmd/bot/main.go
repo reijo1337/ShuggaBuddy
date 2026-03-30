@@ -15,9 +15,11 @@ import (
 	"github.com/gmtantsevov/shuggabuddy/internal/repository/postgres"
 	"github.com/gmtantsevov/shuggabuddy/internal/scheduler"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/activity"
+	"github.com/gmtantsevov/shuggabuddy/internal/usecase/diary"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/food"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/glucose"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/insulin"
+	"github.com/gmtantsevov/shuggabuddy/internal/usecase/note"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/user"
 	"github.com/gmtantsevov/shuggabuddy/pkg/config"
 	"github.com/gmtantsevov/shuggabuddy/pkg/logger"
@@ -87,14 +89,17 @@ func main() {
 	insulinRepo := postgres.NewInsulinRepo(pool)
 	activityRepo := postgres.NewActivityRepo(pool)
 	reminderRepo := postgres.NewReminderRepo(pool)
+	noteRepo := postgres.NewNoteRepository(pool)
 
 	userUC := user.New(userRepo, extAccRepo)
 	glucoseUC := glucose.New(glucoseRepo)
 	foodUC := food.New(foodRepo)
 	insulinUC := insulin.New(insulinRepo)
 	activityUC := activity.New(activityRepo, glucoseRepo, reminderRepo)
+	noteUC := note.New(noteRepo)
+	diaryUC := diary.New(glucoseRepo, foodRepo, insulinRepo, activityRepo, noteRepo)
 
-	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, insulinUC, activityUC, loc, log)
+	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, insulinUC, activityUC, noteUC, diaryUC, loc, log)
 
 	messenger := &telegramMessenger{bot: bot, log: log}
 	reminderScheduler := scheduler.NewReminderScheduler(reminderRepo, activityRepo, glucoseRepo, messenger, log)

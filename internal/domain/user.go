@@ -18,10 +18,15 @@ const MmolToMgdl = 18.0182
 
 // User представляет профиль пользователя бота.
 type User struct {
-	ID           int64     `json:"id"`
-	Units        Units     `json:"units"`
-	CarbsPerUnit float64   `json:"carbs_per_unit"` // grams of carbs per 1 bread unit (ХЕ), default 12
-	CreatedAt    time.Time `json:"created_at"`
+	ID            int64     `json:"id"`
+	Units         Units     `json:"units"`
+	CarbsPerUnit  float64   `json:"carbs_per_unit"`  // grams of carbs per 1 bread unit (ХЕ), default 12
+	TargetMinMmol float64   `json:"target_min_mmol"` // lower bound of target glucose range
+	TargetMaxMmol float64   `json:"target_max_mmol"` // upper bound of target glucose range
+	BasalDrug     string    `json:"basal_drug"`      // name of basal insulin drug, empty = not set
+	BasalTime     string    `json:"basal_time"`      // preferred injection time (HH:MM), empty = not set
+	Timezone      string    `json:"timezone"`        // IANA timezone name, e.g. "Europe/Moscow", default "UTC"
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 type Provider string
@@ -45,6 +50,8 @@ type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	UpdateUnits(ctx context.Context, id int64, units Units) error
 	UpdateCarbsPerUnit(ctx context.Context, id int64, grams float64) error
+	UpdateSettings(ctx context.Context, userID int64, targetMin, targetMax float64, basalDrug, basalTime string) error
+	UpdateTimezone(ctx context.Context, userID int64, timezone string) error
 }
 
 //go:generate mockgen -destination=mocks/mock_external_account_repository.go -package=mocks . ExternalAccountRepository

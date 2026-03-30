@@ -21,7 +21,7 @@ func TestActivityHappyPath_Running(t *testing.T) {
 	activityUC := tgmocks.NewMockActivityUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, activityUC, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, activityUC, nil, nil, loc)
 
 	// Step 1: start activity flow
 	cb := testCallback(123, 100, "menu:activity")
@@ -74,7 +74,7 @@ func TestActivityHappyPath_Other_CustomType(t *testing.T) {
 	activityUC := tgmocks.NewMockActivityUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, activityUC, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, activityUC, nil, nil, loc)
 
 	// Step 1: start + select "other" type
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:activity"))
@@ -113,7 +113,7 @@ func TestActivityDurationQuickButtons(t *testing.T) {
 			activityUC := tgmocks.NewMockActivityUseCase(ctrl)
 			loc := newTestLocalizer(t)
 
-			h := newTestHandler(bot, nil, nil, nil, nil, activityUC, loc)
+			h := newTestHandler(bot, nil, nil, nil, nil, activityUC, nil, nil, loc)
 			sess := telegram.NewSession(telegram.SessionActivity, telegram.StepActivityDuration)
 			sess.Data["type"] = "running"
 			h.SetSession(100, sess)
@@ -131,7 +131,7 @@ func TestActivityDurationManualInput_Valid(t *testing.T) {
 	activityUC := tgmocks.NewMockActivityUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, activityUC, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, activityUC, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionActivity, telegram.StepActivityDuration)
 	sess.Data["type"] = "running"
 	h.SetSession(100, sess)
@@ -147,7 +147,7 @@ func TestActivityDurationManualInput_Invalid(t *testing.T) {
 	activityUC := tgmocks.NewMockActivityUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, activityUC, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, activityUC, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionActivity, telegram.StepActivityDuration)
 	sess.Data["type"] = "running"
 	h.SetSession(100, sess)
@@ -163,7 +163,7 @@ func TestActivityDurationManualInput_OutOfRange(t *testing.T) {
 	activityUC := tgmocks.NewMockActivityUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, activityUC, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, activityUC, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionActivity, telegram.StepActivityDuration)
 	sess.Data["type"] = "running"
 	h.SetSession(100, sess)
@@ -180,7 +180,7 @@ func TestActivityImpactLow(t *testing.T) {
 	activityUC := tgmocks.NewMockActivityUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, activityUC, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, activityUC, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionActivity, telegram.StepActivityTime)
 	sess.Data["type"] = "yoga"
 	sess.Data["duration"] = 15
@@ -206,7 +206,7 @@ func TestActivityHistory(t *testing.T) {
 	activityUC := tgmocks.NewMockActivityUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, activityUC, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, activityUC, nil, nil, loc)
 
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)

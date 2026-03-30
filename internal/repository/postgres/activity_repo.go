@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -69,6 +70,33 @@ func (r *ActivityRepo) GetLast(ctx context.Context, userID int64, limit int) ([]
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("ActivityRepo.GetLast: rows: %w", err)
+	}
+	return entries, nil
+}
+
+func (r *ActivityRepo) GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*domain.ActivityEntry, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, user_id, activity_type, custom_type, duration_min, intensity, recorded_at, created_at
+		 FROM activity_entries
+		 WHERE user_id = $1 AND recorded_at >= $2 AND recorded_at < $3
+		 ORDER BY recorded_at DESC`,
+		userID, from, to,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("ActivityRepo.GetByTimeRange: %w", err)
+	}
+	defer rows.Close()
+
+	var entries []*domain.ActivityEntry
+	for rows.Next() {
+		e := &domain.ActivityEntry{}
+		if err := rows.Scan(&e.ID, &e.UserID, &e.ActivityType, &e.CustomType, &e.DurationMin, &e.Intensity, &e.RecordedAt, &e.CreatedAt); err != nil {
+			return nil, fmt.Errorf("ActivityRepo.GetByTimeRange: scan: %w", err)
+		}
+		entries = append(entries, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ActivityRepo.GetByTimeRange: rows: %w", err)
 	}
 	return entries, nil
 }

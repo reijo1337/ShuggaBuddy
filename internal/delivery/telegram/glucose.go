@@ -56,80 +56,22 @@ func (h *Handler) handleGlucoseStep(ctx context.Context, msg *tgbotapi.Message, 
 	unitsLabel := h.unitsLabel(string(user.Units))
 
 	var displayValue string
+	var valueMmol float64
 	if user.Units == domain.UnitsMgdl {
 		displayValue = strconv.FormatFloat(value, 'f', 0, 64)
+		valueMmol = value / domain.MmolToMgdl
 	} else {
 		displayValue = strconv.FormatFloat(value, 'f', 1, 64)
+		valueMmol = value
 	}
+
+	indicator := glucoseStatusEmoji(valueMmol, user.TargetMinMmol, user.TargetMaxMmol)
 
 	h.replyWithKeyboard(
 		msg.Chat.ID,
-		h.loc.T("glucose_saved", displayValue, unitsLabel),
+		h.loc.T("glucose_saved", displayValue, unitsLabel)+" "+indicator,
 		h.backToMenuKeyboard(),
 	)
-}
-
-// handleLastCb показывает последние 5 записей (глюкоза + еда + инсулин, смешанная лента).
-func (h *Handler) handleLastCb(ctx context.Context, cb *tgbotapi.CallbackQuery) {
-	user, _, err := h.userUC.GetProfile(ctx, domain.ProviderTelegram, strconv.FormatInt(cb.From.ID, 10))
-	if err != nil || user == nil {
-		h.log.Error("handleLastCb: failed to get user", zap.Error(err))
-		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
-		return
-	}
-
-	glucReadings, err := h.glucUC.GetLastReadings(ctx, user.ID, 5)
-	if err != nil {
-		h.log.Error("handleLastCb: failed to get glucose readings", zap.Error(err))
-		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
-		return
-	}
-
-	foodEntries, err := h.foodUC.GetLastEntries(ctx, user.ID, 5)
-	if err != nil {
-		h.log.Error("handleLastCb: failed to get food entries", zap.Error(err))
-		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
-		return
-	}
-
-	insulinDoses, err := h.insulinUC.GetLastDoses(ctx, user.ID, 5)
-	if err != nil {
-		h.log.Error("handleLastCb: failed to get insulin doses", zap.Error(err))
-		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
-		return
-	}
-
-	activityEntries, err := h.activityUC.GetLastEntries(ctx, user.ID, 5)
-	if err != nil {
-		h.log.Error("handleLastCb: failed to get activity entries", zap.Error(err))
-		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
-		return
-	}
-
-	if len(glucReadings) == 0 && len(foodEntries) == 0 && len(insulinDoses) == 0 && len(activityEntries) == 0 {
-		h.replyWithKeyboard(cb.Message.Chat.ID, h.loc.T("last_empty_short"), h.backToMenuKeyboard())
-		return
-	}
-
-	unitsLabel := h.unitsLabel(string(user.Units))
-
-	activityRows := make([]string, len(activityEntries))
-	for i, e := range activityEntries {
-		typeLabel := h.activityTypeLabel(e.ActivityType, e.CustomType)
-		activityRows[i] = formatActivityRow(e, typeLabel)
-	}
-
-	rows := buildMixedHistory(glucReadings, foodEntries, insulinDoses, activityEntries, activityRows, user.Units, unitsLabel, 5)
-
-	var sb strings.Builder
-	sb.WriteString(h.loc.T("last_header"))
-	sb.WriteString("\n")
-	for _, row := range rows {
-		sb.WriteString(row)
-		sb.WriteString("\n")
-	}
-
-	h.replyWithKeyboard(cb.Message.Chat.ID, sb.String(), h.backToMenuKeyboard())
 }
 
 // buildMixedHistory merges glucose readings, food entries, and insulin doses,
@@ -208,6 +150,17 @@ func buildMixedHistory(
 		rows[i] = e.text
 	}
 	return rows
+}
+
+func glucoseStatusEmoji(valueMmol, minMmol, maxMmol float64) string {
+	switch domain.GlucoseStatus(valueMmol, minMmol, maxMmol) {
+	case "low":
+		return "🔴"
+	case "high":
+		return "🟡"
+	default:
+		return "🟢"
+	}
 }
 
 func formatGlucoseRow(r domain.GlucoseReading, units domain.Units, unitsLabel string) string {

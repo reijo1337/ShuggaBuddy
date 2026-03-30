@@ -12,6 +12,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	domain "github.com/gmtantsevov/shuggabuddy/internal/domain"
 	gomock "go.uber.org/mock/gomock"
@@ -39,6 +40,21 @@ func NewMockFoodRepository(ctrl *gomock.Controller) *MockFoodRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockFoodRepository) EXPECT() *MockFoodRepositoryMockRecorder {
 	return m.recorder
+}
+
+// GetByTimeRange mocks base method.
+func (m *MockFoodRepository) GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*domain.FoodEntry, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByTimeRange", ctx, userID, from, to)
+	ret0, _ := ret[0].([]*domain.FoodEntry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByTimeRange indicates an expected call of GetByTimeRange.
+func (mr *MockFoodRepositoryMockRecorder) GetByTimeRange(ctx, userID, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTimeRange", reflect.TypeOf((*MockFoodRepository)(nil).GetByTimeRange), ctx, userID, from, to)
 }
 
 // GetLast mocks base method.

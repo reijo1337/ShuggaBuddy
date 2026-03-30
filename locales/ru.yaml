@@ -3,9 +3,9 @@ menu_title: "Выбери действие:"
 btn_profile: "👤 Профиль"
 btn_units: "📏 Единицы: %s"
 btn_carbs_unit: "🧮 ХЕ: %sг"
-btn_glucose: "🩸 Новая запись"
+btn_new_entry: "➕ Новая запись"
+btn_glucose: "🩸 Глюкоза"
 btn_food: "🍽 Записать еду"
-btn_last: "📋 Последние 5 записей"
 btn_back_menu: "◀️ В меню"
 units_gram_suffix: "г"
 
@@ -54,12 +54,6 @@ carbs_unit_saved: "Настройка ХЕ изменена: 1 ХЕ = %sг"
 carbs_unit_invalid: "Введи число от 1 до 50."
 carbs_unit_btn_custom: "Своё значение"
 carbs_unit_custom_prompt: "Введи количество граммов на 1 ХЕ (от 1 до 50):"
-
-# Последние записи (смешанная лента)
-last_empty_short: "Записей пока нет."
-last_header: "Последние записи:"
-last_glucose_row: "  %s — 🩸 %s %s"
-last_food_row: "  %s — 🍽 %sг%s"
 
 # Инсулин
 btn_insulin: "💉 Записать инсулин"
@@ -126,6 +120,55 @@ analytics_header: "📊 Анализ последних активностей"
 analytics_empty: "Нет записей для анализа."
 analytics_row_delta: "  %s — %s · %d мин · 🩸 %.1f → %.1f (%+.1f)"
 analytics_row_no_glucose: "  %s — %s · %d мин · нет замеров"
+
+# Заметки
+btn_note: "📝 Заметка"
+note_type_select: "Выбери тип заметки:"
+note_type_wellbeing: "😊 Самочувствие"
+note_type_illness: "🤒 Болезнь"
+note_type_stress: "😰 Стресс"
+note_type_free: "📝 Свободный текст"
+note_wellbeing_select: "Как ты себя чувствуешь?"
+note_wellbeing_good: "😊 Хорошо"
+note_wellbeing_normal: "😐 Нормально"
+note_wellbeing_bad: "😔 Плохо"
+note_wellbeing_sick: "🤒 Болею"
+note_text_prompt: "Добавь текст или пропусти:"
+note_skip: "Пропустить"
+note_saved: "✅ Заметка сохранена."
+
+# Дневник
+btn_diary: "📋 Дневник"
+diary_title: "📋 Дневник за %s"
+diary_empty: "Записей за этот день нет."
+diary_nav_prev: "← Назад"
+diary_nav_next: "Вперёд →"
+diary_select_date: "Выбрать дату"
+diary_date_prompt: "Введи дату в формате ДД.ММ или ДД.ММ.ГГГГ:"
+diary_date_invalid: "Не удалось распознать дату. Попробуй: 15.03 или 15.03.2025"
+
+# Профиль — таймзона
+profile_timezone: "🌍 Часовой пояс: %s"
+profile_timezone_btn: "🌍 Часовой пояс"
+profile_timezone_prompt: "Выбери часовой пояс:"
+
+# Профиль — целевой диапазон и базальный инсулин
+profile_target_range: "⚙️ Целевой диапазон"
+profile_target_min_prompt: "Введи нижнюю границу диапазона (ммоль/л, например: 3.9):"
+profile_target_max_prompt: "Введи верхнюю границу диапазона (ммоль/л, например: 10.0):"
+profile_target_saved: "✅ Целевой диапазон обновлён: %s – %s ммоль/л"
+profile_target_invalid: "Некорректное значение. Введи число от 1.0 до 33.3."
+profile_target_range_invalid: "Верхняя граница должна быть больше нижней."
+profile_basal: "💉 Базальный инсулин"
+profile_basal_drug_prompt: "Введи название базального инсулина (например: Лантус) или пропусти:"
+profile_basal_time_prompt: "Введи время инъекции в формате ЧЧ:ММ (например: 22:00) или пропусти:"
+profile_basal_skip: "Пропустить"
+profile_basal_saved: "✅ Базальный инсулин сохранён."
+
+# Индикатор глюкозы
+glucose_indicator_low: "🔴"
+glucose_indicator_in_range: "🟢"
+glucose_indicator_high: "🟡"
 
 # Ошибки
 error_internal: "Произошла внутренняя ошибка. Попробуй позже."

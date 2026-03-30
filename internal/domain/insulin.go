@@ -29,4 +29,5 @@ type InsulinDose struct {
 type InsulinRepository interface {
 	Save(ctx context.Context, dose *InsulinDose) error
 	GetLast(ctx context.Context, userID int64, limit int) ([]InsulinDose, error)
+	GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*InsulinDose, error)
 }

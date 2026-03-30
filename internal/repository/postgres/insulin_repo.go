@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -53,6 +54,33 @@ func (r *InsulinRepo) GetLast(ctx context.Context, userID int64, limit int) ([]d
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("InsulinRepo.GetLast: rows: %w", err)
+	}
+	return doses, nil
+}
+
+func (r *InsulinRepo) GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*domain.InsulinDose, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, user_id, dose_units, insulin_type, drug, recorded_at
+		 FROM insulin_doses
+		 WHERE user_id = $1 AND recorded_at >= $2 AND recorded_at < $3
+		 ORDER BY recorded_at DESC`,
+		userID, from, to,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("InsulinRepo.GetByTimeRange: %w", err)
+	}
+	defer rows.Close()
+
+	var doses []*domain.InsulinDose
+	for rows.Next() {
+		d := &domain.InsulinDose{}
+		if err := rows.Scan(&d.ID, &d.UserID, &d.DoseUnits, &d.InsulinType, &d.Drug, &d.RecordedAt); err != nil {
+			return nil, fmt.Errorf("InsulinRepo.GetByTimeRange: scan: %w", err)
+		}
+		doses = append(doses, d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("InsulinRepo.GetByTimeRange: rows: %w", err)
 	}
 	return doses, nil
 }

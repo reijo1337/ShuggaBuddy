@@ -74,4 +74,5 @@ type ActivityRepository interface {
 	Save(ctx context.Context, entry *ActivityEntry) (int64, error)
 	GetByID(ctx context.Context, id int64) (*ActivityEntry, error)
 	GetLast(ctx context.Context, userID int64, limit int) ([]ActivityEntry, error)
+	GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*ActivityEntry, error)
 }

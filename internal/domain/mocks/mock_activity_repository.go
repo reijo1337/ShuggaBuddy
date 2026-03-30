@@ -12,6 +12,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	domain "github.com/gmtantsevov/shuggabuddy/internal/domain"
 	gomock "go.uber.org/mock/gomock"
@@ -54,6 +55,21 @@ func (m *MockActivityRepository) GetByID(ctx context.Context, id int64) (*domain
 func (mr *MockActivityRepositoryMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockActivityRepository)(nil).GetByID), ctx, id)
+}
+
+// GetByTimeRange mocks base method.
+func (m *MockActivityRepository) GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*domain.ActivityEntry, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByTimeRange", ctx, userID, from, to)
+	ret0, _ := ret[0].([]*domain.ActivityEntry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByTimeRange indicates an expected call of GetByTimeRange.
+func (mr *MockActivityRepositoryMockRecorder) GetByTimeRange(ctx, userID, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTimeRange", reflect.TypeOf((*MockActivityRepository)(nil).GetByTimeRange), ctx, userID, from, to)
 }
 
 // GetLast mocks base method.

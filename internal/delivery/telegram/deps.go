@@ -25,6 +25,8 @@ type UserUseCase interface {
 	GetProfile(ctx context.Context, provider domain.Provider, externalID string) (*domain.User, *domain.ExternalAccount, error)
 	UpdateUnits(ctx context.Context, userID int64, units domain.Units) error
 	UpdateCarbsPerUnit(ctx context.Context, userID int64, grams float64) error
+	UpdateSettings(ctx context.Context, userID int64, targetMin, targetMax float64, basalDrug, basalTime string) error
+	UpdateTimezone(ctx context.Context, userID int64, timezone string) error
 }
 
 //go:generate mockgen -destination=mocks/mock_glucose_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram GlucoseUseCase
@@ -59,4 +61,18 @@ type ActivityUseCase interface {
 	GetLastEntries(ctx context.Context, userID int64, limit int) ([]domain.ActivityEntry, error)
 	EvaluateImpact(activityType domain.ActivityType, durationMin int, intensity domain.Intensity) domain.GlycemicImpact
 	AnalyzeLastActivities(ctx context.Context, userID int64, limit int) ([]domain.ActivityAnalysis, error)
+}
+
+//go:generate mockgen -destination=mocks/mock_note_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram NoteUseCase
+
+// NoteUseCase описывает бизнес-логику заметок, необходимую delivery-слою.
+type NoteUseCase interface {
+	SaveNote(ctx context.Context, userID int64, noteType domain.NoteType, wellbeing *domain.WellbeingValue, text *string) error
+}
+
+//go:generate mockgen -destination=mocks/mock_diary_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram DiaryUseCase
+
+// DiaryUseCase описывает бизнес-логику дневника, необходимую delivery-слою.
+type DiaryUseCase interface {
+	GetDayEntries(ctx context.Context, userID int64, date time.Time, loc *time.Location) ([]*domain.DiaryEntry, error)
 }

@@ -50,6 +50,18 @@ const (
 	StepActivityDuration  = stepActivityDuration
 	StepActivityTime      = stepActivityTime
 	StepActivityIntensity = stepActivityIntensity
+
+	SessionNote    = sessionNote
+	SessionDiary   = sessionDiary
+	SessionProfile = sessionProfile
+
+	StepNoteWellbeing    = stepNoteWellbeing
+	StepNoteText         = stepNoteText
+	StepDiaryDate        = stepDiaryDate
+	StepProfileTargetMin = stepProfileTargetMin
+	StepProfileTargetMax = stepProfileTargetMax
+	StepProfileBasalDrug = stepProfileBasalDrug
+	StepProfileBasalTime = stepProfileBasalTime
 )
 
 // SetSession stores a session directly for use in tests.

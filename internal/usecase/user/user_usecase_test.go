@@ -302,3 +302,120 @@ func TestUpdateCarbsPerUnit_RepoError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "db error")
 }
+
+func TestUpdateSettings(t *testing.T) {
+	type args struct {
+		userID    int64
+		targetMin float64
+		targetMax float64
+		basalDrug string
+		basalTime string
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		setupMock   func(userRepo *mocks.MockUserRepository)
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid input",
+			args: args{userID: 1, targetMin: 3.9, targetMax: 10.0, basalDrug: "Lantus", basalTime: "22:00"},
+			setupMock: func(userRepo *mocks.MockUserRepository) {
+				userRepo.EXPECT().
+					UpdateSettings(gomock.Any(), int64(1), 3.9, 10.0, "Lantus", "22:00").
+					Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid: empty basalDrug and basalTime",
+			args: args{userID: 2, targetMin: 4.0, targetMax: 8.0, basalDrug: "", basalTime: ""},
+			setupMock: func(userRepo *mocks.MockUserRepository) {
+				userRepo.EXPECT().
+					UpdateSettings(gomock.Any(), int64(2), 4.0, 8.0, "", "").
+					Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:      "invalid: targetMin < 1.0",
+			args:      args{userID: 1, targetMin: 0.5, targetMax: 10.0, basalDrug: "", basalTime: ""},
+			setupMock: func(_ *mocks.MockUserRepository) {},
+			wantErr:   true,
+		},
+		{
+			name:      "invalid: targetMax > 33.3",
+			args:      args{userID: 1, targetMin: 3.9, targetMax: 34.0, basalDrug: "", basalTime: ""},
+			setupMock: func(_ *mocks.MockUserRepository) {},
+			wantErr:   true,
+		},
+		{
+			name:      "invalid: targetMax <= targetMin",
+			args:      args{userID: 1, targetMin: 10.0, targetMax: 5.0, basalDrug: "", basalTime: ""},
+			setupMock: func(_ *mocks.MockUserRepository) {},
+			wantErr:   true,
+		},
+		{
+			name:      "invalid: targetMax equals targetMin",
+			args:      args{userID: 1, targetMin: 7.0, targetMax: 7.0, basalDrug: "", basalTime: ""},
+			setupMock: func(_ *mocks.MockUserRepository) {},
+			wantErr:   true,
+		},
+		{
+			name:        "invalid basalTime: bad hours 25:00",
+			args:        args{userID: 1, targetMin: 3.9, targetMax: 10.0, basalDrug: "", basalTime: "25:00"},
+			setupMock:   func(_ *mocks.MockUserRepository) {},
+			wantErr:     true,
+			errContains: "basalTime",
+		},
+		{
+			name:        "invalid basalTime: bad minutes 10:60",
+			args:        args{userID: 1, targetMin: 3.9, targetMax: 10.0, basalDrug: "", basalTime: "10:60"},
+			setupMock:   func(_ *mocks.MockUserRepository) {},
+			wantErr:     true,
+			errContains: "basalTime",
+		},
+		{
+			name:        "invalid basalTime: non-numeric abc",
+			args:        args{userID: 1, targetMin: 3.9, targetMax: 10.0, basalDrug: "", basalTime: "abc"},
+			setupMock:   func(_ *mocks.MockUserRepository) {},
+			wantErr:     true,
+			errContains: "basalTime",
+		},
+		{
+			name: "repo returns error",
+			args: args{userID: 1, targetMin: 3.9, targetMax: 10.0, basalDrug: "Tresiba", basalTime: "08:00"},
+			setupMock: func(userRepo *mocks.MockUserRepository) {
+				userRepo.EXPECT().
+					UpdateSettings(gomock.Any(), int64(1), 3.9, 10.0, "Tresiba", "08:00").
+					Return(errors.New("db error"))
+			},
+			wantErr:     true,
+			errContains: "db error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			userRepo := mocks.NewMockUserRepository(ctrl)
+			extAccRepo := mocks.NewMockExternalAccountRepository(ctrl)
+
+			tt.setupMock(userRepo)
+
+			uc := user.New(userRepo, extAccRepo)
+			err := uc.UpdateSettings(context.Background(), tt.args.userID, tt.args.targetMin, tt.args.targetMax, tt.args.basalDrug, tt.args.basalTime)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errContains != "" {
+					assert.Contains(t, err.Error(), tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

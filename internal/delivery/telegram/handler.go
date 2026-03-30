@@ -20,6 +20,8 @@ type Handler struct {
 	foodUC     FoodUseCase
 	insulinUC  InsulinUseCase
 	activityUC ActivityUseCase
+	noteUC     NoteUseCase
+	diaryUC    DiaryUseCase
 	loc        *i18n.Localizer
 	log        *zap.Logger
 
@@ -34,6 +36,8 @@ func NewHandler(
 	foodUC FoodUseCase,
 	insulinUC InsulinUseCase,
 	activityUC ActivityUseCase,
+	noteUC NoteUseCase,
+	diaryUC DiaryUseCase,
 	loc *i18n.Localizer,
 	log *zap.Logger,
 ) *Handler {
@@ -44,6 +48,8 @@ func NewHandler(
 		foodUC:     foodUC,
 		insulinUC:  insulinUC,
 		activityUC: activityUC,
+		noteUC:     noteUC,
+		diaryUC:    diaryUC,
 		loc:        loc,
 		log:        log,
 	}
@@ -97,6 +103,12 @@ func (h *Handler) handleSessionInput(ctx context.Context, msg *tgbotapi.Message,
 		h.handleInsulinStep(ctx, msg, sess)
 	case sessionActivity:
 		h.handleActivityStep(ctx, msg, sess)
+	case sessionNote:
+		h.handleNoteText(ctx, msg, sess)
+	case sessionDiary:
+		h.handleDiaryText(ctx, msg, sess)
+	case sessionProfile:
+		h.handleProfileStep(ctx, msg, sess)
 	}
 }
 
@@ -117,40 +129,20 @@ func (h *Handler) replyWithKeyboard(chatID int64, text string, keyboard tgbotapi
 	}
 }
 
-// menuKeyboard builds the main menu. unitsLabel is the display string for glucose units.
-// carbsPerUnit is the display string for the ХЕ setting button (e.g. "12").
-func (h *Handler) menuKeyboard(unitsLabel, carbsPerUnit string) tgbotapi.InlineKeyboardMarkup {
+// menuKeyboard builds the main menu.
+func (h *Handler) menuKeyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_profile"), "menu:profile"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(
-				h.loc.T("btn_units", unitsLabel), "menu:units",
-			),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(
-				h.loc.T("btn_carbs_unit", carbsPerUnit), "menu:carbs_unit",
-			),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_glucose"), "menu:glucose"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_food"), "menu:food"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_insulin"), "menu:insulin"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_activity"), "menu:activity"),
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_new_entry"), "menu:new_entry"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_analytics"), "menu:analytics"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_last"), "menu:last"),
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_diary"), "menu:diary"),
 		),
 	)
 }
@@ -163,8 +155,8 @@ func (h *Handler) backToMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
-func (h *Handler) sendMenu(chatID int64, text, unitsLabel, carbsPerUnit string) {
-	h.replyWithKeyboard(chatID, text, h.menuKeyboard(unitsLabel, carbsPerUnit))
+func (h *Handler) sendMenu(chatID int64, text string) {
+	h.replyWithKeyboard(chatID, text, h.menuKeyboard())
 }
 
 func (h *Handler) unitsLabel(units string) string {

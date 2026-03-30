@@ -4,6 +4,9 @@ package user
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gmtantsevov/shuggabuddy/internal/domain"
 )
@@ -77,6 +80,46 @@ func (uc *UseCase) UpdateUnits(ctx context.Context, id int64, units domain.Units
 	}
 
 	return nil
+}
+
+// UpdateSettings updates the user's target glucose range and basal insulin settings.
+// targetMin and targetMax must be in [1.0, 33.3] mmol/L, and targetMax must be greater than targetMin.
+// basalTime must be either empty or in "HH:MM" format (24h).
+func (uc *UseCase) UpdateSettings(ctx context.Context, userID int64, targetMin, targetMax float64, basalDrug, basalTime string) error {
+	const minGlucose, maxGlucose = 1.0, 33.3
+
+	if targetMin < minGlucose || targetMin > maxGlucose {
+		return fmt.Errorf("user.UpdateSettings: targetMin %.1f out of range [1.0–33.3]", targetMin)
+	}
+	if targetMax < minGlucose || targetMax > maxGlucose {
+		return fmt.Errorf("user.UpdateSettings: targetMax %.1f out of range [1.0–33.3]", targetMax)
+	}
+	if targetMax <= targetMin {
+		return fmt.Errorf("user.UpdateSettings: targetMax must be greater than targetMin")
+	}
+
+	if basalTime != "" {
+		parts := strings.Split(basalTime, ":")
+		if len(parts) != 2 {
+			return fmt.Errorf("user.UpdateSettings: invalid basalTime %q, expected HH:MM", basalTime)
+		}
+		h, errH := strconv.Atoi(parts[0])
+		m, errM := strconv.Atoi(parts[1])
+		if errH != nil || errM != nil || h < 0 || h > 23 || m < 0 || m > 59 {
+			return fmt.Errorf("user.UpdateSettings: invalid basalTime %q, expected HH:MM", basalTime)
+		}
+	}
+
+	return uc.userRepo.UpdateSettings(ctx, userID, targetMin, targetMax, basalDrug, basalTime)
+}
+
+// UpdateTimezone updates the user's IANA timezone (e.g. "Europe/Moscow").
+// Returns an error if the timezone name is not recognised by Go's time package.
+func (uc *UseCase) UpdateTimezone(ctx context.Context, userID int64, timezone string) error {
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return fmt.Errorf("user.UpdateTimezone: unknown timezone %q: %w", timezone, err)
+	}
+	return uc.userRepo.UpdateTimezone(ctx, userID, timezone)
 }
 
 // UpdateCarbsPerUnit updates how many grams of carbohydrates equal 1 bread unit (XE).

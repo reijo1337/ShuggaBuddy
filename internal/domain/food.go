@@ -20,4 +20,5 @@ type FoodEntry struct {
 type FoodRepository interface {
 	Save(ctx context.Context, entry *FoodEntry) error
 	GetLast(ctx context.Context, userID int64, limit int) ([]FoodEntry, error)
+	GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*FoodEntry, error)
 }

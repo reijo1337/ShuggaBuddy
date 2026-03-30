@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -56,5 +57,32 @@ func (r *FoodRepo) GetLast(ctx context.Context, userID int64, limit int) ([]doma
 		return nil, fmt.Errorf("FoodRepo.GetLast: rows: %w", err)
 	}
 
+	return entries, nil
+}
+
+func (r *FoodRepo) GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*domain.FoodEntry, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, user_id, carbs_grams, note, eaten_at, created_at
+		 FROM food_entries
+		 WHERE user_id = $1 AND eaten_at >= $2 AND eaten_at < $3
+		 ORDER BY eaten_at DESC`,
+		userID, from, to,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("FoodRepo.GetByTimeRange: %w", err)
+	}
+	defer rows.Close()
+
+	var entries []*domain.FoodEntry
+	for rows.Next() {
+		e := &domain.FoodEntry{}
+		if err := rows.Scan(&e.ID, &e.UserID, &e.CarbsGrams, &e.Note, &e.EatenAt, &e.CreatedAt); err != nil {
+			return nil, fmt.Errorf("FoodRepo.GetByTimeRange: scan: %w", err)
+		}
+		entries = append(entries, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("FoodRepo.GetByTimeRange: rows: %w", err)
+	}
 	return entries, nil
 }

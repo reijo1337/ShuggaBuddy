@@ -88,6 +88,34 @@ func (mr *MockUserUseCaseMockRecorder) UpdateCarbsPerUnit(ctx, userID, grams any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCarbsPerUnit", reflect.TypeOf((*MockUserUseCase)(nil).UpdateCarbsPerUnit), ctx, userID, grams)
 }
 
+// UpdateSettings mocks base method.
+func (m *MockUserUseCase) UpdateSettings(ctx context.Context, userID int64, targetMin, targetMax float64, basalDrug, basalTime string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSettings", ctx, userID, targetMin, targetMax, basalDrug, basalTime)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSettings indicates an expected call of UpdateSettings.
+func (mr *MockUserUseCaseMockRecorder) UpdateSettings(ctx, userID, targetMin, targetMax, basalDrug, basalTime any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSettings", reflect.TypeOf((*MockUserUseCase)(nil).UpdateSettings), ctx, userID, targetMin, targetMax, basalDrug, basalTime)
+}
+
+// UpdateTimezone mocks base method.
+func (m *MockUserUseCase) UpdateTimezone(ctx context.Context, userID int64, timezone string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTimezone", ctx, userID, timezone)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateTimezone indicates an expected call of UpdateTimezone.
+func (mr *MockUserUseCaseMockRecorder) UpdateTimezone(ctx, userID, timezone any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTimezone", reflect.TypeOf((*MockUserUseCase)(nil).UpdateTimezone), ctx, userID, timezone)
+}
+
 // UpdateUnits mocks base method.
 func (m *MockUserUseCase) UpdateUnits(ctx context.Context, userID int64, units domain.Units) error {
 	m.ctrl.T.Helper()

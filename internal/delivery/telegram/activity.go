@@ -386,9 +386,3 @@ func (h *Handler) handleActivityHistory(ctx context.Context, cb *tgbotapi.Callba
 
 	h.replyWithKeyboard(cb.Message.Chat.ID, sb.String(), h.backToMenuKeyboard())
 }
-
-// formatActivityRow форматирует запись активности для смешанной ленты.
-func formatActivityRow(e domain.ActivityEntry, typeLabel string) string {
-	return "  " + e.RecordedAt.Format("02.01 15:04") + " — 🏃 " +
-		typeLabel + " · " + strconv.Itoa(e.DurationMin) + " мин"
-}
