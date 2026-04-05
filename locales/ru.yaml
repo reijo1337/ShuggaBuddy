@@ -170,5 +170,33 @@ glucose_indicator_low: "🔴"
 glucose_indicator_in_range: "🟢"
 glucose_indicator_high: "🟡"
 
+# Калькулятор болюса
+insulin_btn_manual: "📝 Ввести дозу"
+insulin_btn_calc: "🧮 Калькулятор"
+bolus_err_no_drug: "Сначала выбери болюсный инсулин в профиле."
+bolus_err_no_drug_btn: "⚙️ Настроить"
+bolus_err_insufficient_data: "Недостаточно данных для расчёта. Продолжай вести дневник (минимум 5 связок еда+болюс+глюкоза за 14 дней)."
+bolus_glucose_confirm: "Последнее: %s %s (%s назад)\nИспользовать это значение?"
+bolus_glucose_btn_confirm: "✅ Подтвердить"
+bolus_glucose_btn_manual: "✏️ Ввести другое"
+bolus_glucose_prompt: "Введи текущий уровень сахара:"
+bolus_carbs_prompt: "Введи количество углеводов (г):"
+bolus_result: "💉 Рекомендация: *%s ед.*"
+bolus_result_zero: "💉 Рекомендация: *0 ед.* (активный инсулин покрывает потребность)"
+bolus_btn_details: "📊 Подробнее"
+bolus_btn_save: "✅ Записать"
+bolus_btn_cancel: "❌ Отмена"
+bolus_details: "На еду: %s ед. (ИЧ: %sг/ед.)\nКоррекция: %s ед. (ФЧИ: %s)\nIOB: −%s ед.\nИтого: *%s ед.*"
+bolus_saved: "✅ Инсулин записан (калькулятор):\n💉 %s ед. (болюс)\nПрепарат: %s"
+
+# Профиль — болюсный инсулин
+profile_bolus_drug: "💉 Болюсный инсулин"
+profile_bolus_drug_prompt: "Выбери болюсный инсулин:"
+profile_bolus_drug_saved: "✅ Болюсный инсулин: %s"
+
+# Длительность
+duration_just_now: "только что"
+duration_minutes: "%d мин"
+
 # Ошибки
 error_internal: "Произошла внутренняя ошибка. Попробуй позже."

@@ -27,6 +27,7 @@ type UserUseCase interface {
 	UpdateCarbsPerUnit(ctx context.Context, userID int64, grams float64) error
 	UpdateSettings(ctx context.Context, userID int64, targetMin, targetMax float64, basalDrug, basalTime string) error
 	UpdateTimezone(ctx context.Context, userID int64, timezone string) error
+	UpdateBolusDrug(ctx context.Context, userID int64, drug string) error
 }
 
 //go:generate mockgen -destination=mocks/mock_glucose_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram GlucoseUseCase
@@ -49,7 +50,7 @@ type FoodUseCase interface {
 
 // InsulinUseCase описывает бизнес-логику инсулина, необходимую delivery-слою.
 type InsulinUseCase interface {
-	SaveDose(ctx context.Context, userID int64, dose float64, insulinType domain.InsulinType, drug string) error
+	SaveDose(ctx context.Context, userID int64, dose float64, insulinType domain.InsulinType, drug, source string) error
 	GetLastDoses(ctx context.Context, userID int64, limit int) ([]domain.InsulinDose, error)
 }
 
@@ -75,4 +76,11 @@ type NoteUseCase interface {
 // DiaryUseCase описывает бизнес-логику дневника, необходимую delivery-слою.
 type DiaryUseCase interface {
 	GetDayEntries(ctx context.Context, userID int64, date time.Time, loc *time.Location) ([]*domain.DiaryEntry, error)
+}
+
+//go:generate mockgen -destination=mocks/mock_bolus_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram BolusUseCase
+
+// BolusUseCase описывает бизнес-логику калькулятора болюса.
+type BolusUseCase interface {
+	Calculate(ctx context.Context, userID int64, currentGlucose, carbsGrams float64, now time.Time) (*domain.BolusRecommendation, error)
 }

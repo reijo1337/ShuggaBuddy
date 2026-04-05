@@ -27,7 +27,7 @@ func TestHandleGlucoseStep_InRangeIndicator(t *testing.T) {
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, nil, loc)
 	startGlucoseSession(h, 100)
 
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
@@ -51,7 +51,7 @@ func TestHandleGlucoseStep_LowIndicator(t *testing.T) {
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, nil, loc)
 
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)
@@ -74,7 +74,7 @@ func TestHandleGlucoseStep_HighIndicator(t *testing.T) {
 	glucUC := tgmocks.NewMockGlucoseUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, nil, loc)
 
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)
@@ -94,7 +94,7 @@ func TestHandleGlucoseStep_InvalidInput_NoIndicator(t *testing.T) {
 	bot := &spyBot{}
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionGlucose, telegram.StepGlucoseValue)
 	h.HandleSessionInput(context.Background(), testMessage(123, 100, "abc"), sess)

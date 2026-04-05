@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -229,4 +230,57 @@ func (h *Handler) saveBasalSettings(ctx context.Context, chatID, fromID int64, b
 
 	h.sessions.Delete(chatID)
 	h.replyWithKeyboard(chatID, h.loc.T("profile_basal_saved"), h.backToMenuKeyboard())
+}
+
+// handleBolusDrugMenu shows the bolus drug selection screen.
+func (h *Handler) handleBolusDrugMenu(cb *tgbotapi.CallbackQuery) {
+	type entry struct {
+		key  string
+		name string
+	}
+
+	entries := make([]entry, 0, len(domain.BolusInsulinCatalog))
+	for k, v := range domain.BolusInsulinCatalog {
+		entries = append(entries, entry{key: k, name: v.Name})
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].name < entries[j].name })
+
+	rows := make([][]tgbotapi.InlineKeyboardButton, 0, len(entries)+1)
+	for _, e := range entries {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(e.name, "profile:bolus_drug:set:"+e.key),
+		))
+	}
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_back_menu"), "menu:profile"),
+	))
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	h.replyWithKeyboard(cb.Message.Chat.ID, h.loc.T("profile_bolus_drug_prompt"), keyboard)
+}
+
+// handleBolusDrugSet saves the selected bolus drug.
+func (h *Handler) handleBolusDrugSet(ctx context.Context, cb *tgbotapi.CallbackQuery, drugKey string) {
+	user, _, err := h.userUC.GetProfile(ctx, domain.ProviderTelegram, strconv.FormatInt(cb.From.ID, 10))
+	if err != nil || user == nil {
+		h.log.Error("handleBolusDrugSet: failed to get user", zap.Error(err))
+		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
+		return
+	}
+
+	if err := h.userUC.UpdateBolusDrug(ctx, user.ID, drugKey); err != nil {
+		h.log.Error("handleBolusDrugSet: failed to update", zap.Error(err))
+		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
+		return
+	}
+
+	profile, ok := domain.BolusInsulinCatalog[drugKey]
+	if !ok {
+		h.reply(cb.Message.Chat.ID, h.loc.T("error_internal"))
+		return
+	}
+	h.replyWithKeyboard(cb.Message.Chat.ID,
+		h.loc.T("profile_bolus_drug_saved", profile.Name),
+		h.backToMenuKeyboard(),
+	)
 }

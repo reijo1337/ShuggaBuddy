@@ -20,7 +20,7 @@ func TestHandleNoteStart(t *testing.T) {
 	noteUC := tgmocks.NewMockNoteUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, noteUC, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, noteUC, nil, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 100, "menu:note"))
 
 	require.Len(t, bot.sent, 1)
@@ -46,7 +46,7 @@ func TestHandleNoteCallback_TypeWellbeing(t *testing.T) {
 	noteUC := tgmocks.NewMockNoteUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, noteUC, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, noteUC, nil, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 100, "note:type:wellbeing"))
 
 	require.Len(t, bot.sent, 1)
@@ -71,7 +71,7 @@ func TestHandleNoteCallback_TypeFree(t *testing.T) {
 	noteUC := tgmocks.NewMockNoteUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, noteUC, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, noteUC, nil, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 100, "note:type:free"))
 
 	require.Len(t, bot.sent, 1)
@@ -99,7 +99,7 @@ func TestHandleNoteCallback_WellbeingGood(t *testing.T) {
 	noteUC := tgmocks.NewMockNoteUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, noteUC, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, noteUC, nil, nil, loc)
 
 	// Pre-set session as if note:type:wellbeing was already selected
 	sess := telegram.NewSession(telegram.SessionNote, telegram.StepNoteWellbeing)
@@ -134,7 +134,7 @@ func TestHandleNoteCallback_Skip(t *testing.T) {
 	noteUC := tgmocks.NewMockNoteUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, noteUC, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, noteUC, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionNote, telegram.StepNoteText)
 	sess.Data["note_type"] = "free"
@@ -159,7 +159,7 @@ func TestHandleNoteText_WithText(t *testing.T) {
 	noteUC := tgmocks.NewMockNoteUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, noteUC, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, noteUC, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionNote, telegram.StepNoteText)
 	sess.Data["note_type"] = "free"
@@ -189,7 +189,7 @@ func TestHandleNoteText_WellbeingWithText(t *testing.T) {
 	noteUC := tgmocks.NewMockNoteUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, noteUC, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, noteUC, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionNote, telegram.StepNoteText)
 	sess.Data["note_type"] = "wellbeing"

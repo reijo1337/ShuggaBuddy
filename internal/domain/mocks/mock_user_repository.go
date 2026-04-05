@@ -70,6 +70,20 @@ func (mr *MockUserRepositoryMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserRepository)(nil).GetByID), ctx, id)
 }
 
+// UpdateBolusDrug mocks base method.
+func (m *MockUserRepository) UpdateBolusDrug(ctx context.Context, userID int64, drug string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBolusDrug", ctx, userID, drug)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateBolusDrug indicates an expected call of UpdateBolusDrug.
+func (mr *MockUserRepositoryMockRecorder) UpdateBolusDrug(ctx, userID, drug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBolusDrug", reflect.TypeOf((*MockUserRepository)(nil).UpdateBolusDrug), ctx, userID, drug)
+}
+
 // UpdateCarbsPerUnit mocks base method.
 func (m *MockUserRepository) UpdateCarbsPerUnit(ctx context.Context, id int64, grams float64) error {
 	m.ctrl.T.Helper()

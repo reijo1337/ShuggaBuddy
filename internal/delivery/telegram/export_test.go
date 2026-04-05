@@ -62,6 +62,12 @@ const (
 	StepProfileTargetMax = stepProfileTargetMax
 	StepProfileBasalDrug = stepProfileBasalDrug
 	StepProfileBasalTime = stepProfileBasalTime
+
+	SessionBolus = sessionBolus
+
+	StepBolusGlucose       = stepBolusGlucose
+	StepBolusGlucoseManual = stepBolusGlucoseManual
+	StepBolusCarbs         = stepBolusCarbs
 )
 
 // SetSession stores a session directly for use in tests.

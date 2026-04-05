@@ -19,7 +19,8 @@ type InsulinDose struct {
 	UserID      int64       `json:"user_id"`
 	DoseUnits   float64     `json:"dose_units"`
 	InsulinType InsulinType `json:"insulin_type"`
-	Drug        string      `json:"drug"` // пустая строка = не указан
+	Drug        string      `json:"drug"`   // пустая строка = не указан
+	Source      string      `json:"source"` // "manual" | "bolus_calculator"
 	RecordedAt  time.Time   `json:"recorded_at"`
 }
 

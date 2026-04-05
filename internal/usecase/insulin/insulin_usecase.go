@@ -29,7 +29,8 @@ func New(repo domain.InsulinRepository) *UseCase {
 
 // SaveDose сохраняет дозу инсулина.
 // dose должна быть > 0 и <= MaxDoseUnits.
-func (uc *UseCase) SaveDose(ctx context.Context, userID int64, dose float64, insulinType domain.InsulinType, drug string) error {
+// source указывает источник записи ("manual", "bolus_calculator").
+func (uc *UseCase) SaveDose(ctx context.Context, userID int64, dose float64, insulinType domain.InsulinType, drug, source string) error {
 	if dose <= 0 {
 		return fmt.Errorf("insulin.SaveDose: dose must be positive, got %.2f", dose)
 	}
@@ -37,11 +38,16 @@ func (uc *UseCase) SaveDose(ctx context.Context, userID int64, dose float64, ins
 		return fmt.Errorf("insulin.SaveDose: dose %.2f out of range (max %.0f units)", dose, MaxDoseUnits)
 	}
 
+	if source == "" {
+		source = "manual"
+	}
+
 	d := &domain.InsulinDose{
 		UserID:      userID,
 		DoseUnits:   dose,
 		InsulinType: insulinType,
 		Drug:        drug,
+		Source:      source,
 	}
 
 	if err := uc.repo.Save(ctx, d); err != nil {

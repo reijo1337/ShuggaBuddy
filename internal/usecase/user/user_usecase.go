@@ -122,6 +122,18 @@ func (uc *UseCase) UpdateTimezone(ctx context.Context, userID int64, timezone st
 	return uc.userRepo.UpdateTimezone(ctx, userID, timezone)
 }
 
+// UpdateBolusDrug sets the user's bolus insulin drug.
+// drug must be a valid key from domain.BolusInsulinCatalog.
+func (uc *UseCase) UpdateBolusDrug(ctx context.Context, userID int64, drug string) error {
+	if _, ok := domain.BolusInsulinCatalog[drug]; !ok {
+		return fmt.Errorf("user.UpdateBolusDrug: unknown bolus drug %q", drug)
+	}
+	if err := uc.userRepo.UpdateBolusDrug(ctx, userID, drug); err != nil {
+		return fmt.Errorf("user.UpdateBolusDrug: %w", err)
+	}
+	return nil
+}
+
 // UpdateCarbsPerUnit updates how many grams of carbohydrates equal 1 bread unit (XE).
 // grams must be in [1, 50].
 func (uc *UseCase) UpdateCarbsPerUnit(ctx context.Context, id int64, grams float64) error {

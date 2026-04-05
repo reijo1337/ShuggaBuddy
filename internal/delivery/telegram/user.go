@@ -50,6 +50,32 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 		h.log.Error("handleCallback: failed to answer callback", zap.Error(err))
 	}
 
+	// Bolus calculator prefix routing.
+	if strings.HasPrefix(cb.Data, "bolus:") {
+		switch cb.Data {
+		case "bolus:start":
+			h.handleBolusStart(ctx, cb)
+		case "bolus:glucose:confirm":
+			h.handleBolusGlucoseConfirm(cb)
+		case "bolus:glucose:manual":
+			h.handleBolusGlucoseManual(cb)
+		case "bolus:details":
+			h.handleBolusDetails(cb)
+		case "bolus:save":
+			h.handleBolusSave(ctx, cb)
+		case "bolus:cancel":
+			h.sessions.Delete(cb.Message.Chat.ID)
+			h.handleMenuBack(ctx, cb)
+		}
+		return
+	}
+
+	if strings.HasPrefix(cb.Data, "profile:bolus_drug:set:") {
+		drugKey := strings.TrimPrefix(cb.Data, "profile:bolus_drug:set:")
+		h.handleBolusDrugSet(ctx, cb, drugKey)
+		return
+	}
+
 	// Timezone selection prefix routing.
 	if strings.HasPrefix(cb.Data, "profile:timezone:set:") {
 		iana := strings.TrimPrefix(cb.Data, "profile:timezone:set:")
@@ -125,6 +151,11 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 		h.handleCarbsUnitCustom(cb)
 	case "menu:insulin":
 		h.handleInsulinStart(cb)
+	case "insulin:manual":
+		sess := newSession(sessionInsulin, stepInsulinDose)
+		sess.Data["type"] = string(domain.InsulinTypeBolus)
+		h.sessions.Store(cb.Message.Chat.ID, sess)
+		h.replyWithKeyboard(cb.Message.Chat.ID, h.loc.T("insulin_dose_prompt"), h.backToMenuKeyboard())
 	case "insulin:type:bolus":
 		h.handleInsulinTypeSelect(cb, domain.InsulinTypeBolus)
 	case "insulin:type:basal":
@@ -148,6 +179,8 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 		h.handleDiaryShow(ctx, cb, time.Now())
 	case "profile:target_range":
 		h.handleProfileTargetRangeStart(cb)
+	case "profile:bolus_drug":
+		h.handleBolusDrugMenu(cb)
 	case "profile:basal":
 		h.handleProfileBasalStart(cb)
 	case "profile:basal:skip_drug":
@@ -221,6 +254,15 @@ func (h *Handler) sendProfileView(ctx context.Context, chatID, telegramUserID in
 		basalStr = "💉 Базальный: " + parts
 	}
 
+	var bolusDrugStr string
+	if user.BolusDrug == "" {
+		bolusDrugStr = "💉 Болюсный: не задан"
+	} else if profile, ok := domain.BolusInsulinCatalog[user.BolusDrug]; ok {
+		bolusDrugStr = "💉 Болюсный: " + profile.Name
+	} else {
+		bolusDrugStr = "💉 Болюсный: " + user.BolusDrug
+	}
+
 	tz := user.Timezone
 	if tz == "" {
 		tz = "UTC"
@@ -230,7 +272,7 @@ func (h *Handler) sendProfileView(ctx context.Context, chatID, telegramUserID in
 		acc.DisplayName,
 		label,
 		user.CreatedAt.Format("02.01.2006"),
-	) + "\n" + rangeStr + "\n" + basalStr + "\n" + fmt.Sprintf(h.loc.T("profile_timezone"), tz)
+	) + "\n" + rangeStr + "\n" + basalStr + "\n" + bolusDrugStr + "\n" + fmt.Sprintf(h.loc.T("profile_timezone"), tz)
 
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -241,6 +283,9 @@ func (h *Handler) sendProfileView(ctx context.Context, chatID, telegramUserID in
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("profile_basal"), "profile:basal"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("profile_bolus_drug"), "profile:bolus_drug"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_units", label), "menu:units"),

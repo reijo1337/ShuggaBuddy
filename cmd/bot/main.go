@@ -15,6 +15,7 @@ import (
 	"github.com/gmtantsevov/shuggabuddy/internal/repository/postgres"
 	"github.com/gmtantsevov/shuggabuddy/internal/scheduler"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/activity"
+	"github.com/gmtantsevov/shuggabuddy/internal/usecase/bolus"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/diary"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/food"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/glucose"
@@ -98,8 +99,9 @@ func main() {
 	activityUC := activity.New(activityRepo, glucoseRepo, reminderRepo)
 	noteUC := note.New(noteRepo)
 	diaryUC := diary.New(glucoseRepo, foodRepo, insulinRepo, activityRepo, noteRepo)
+	bolusUC := bolus.New(userRepo, insulinRepo, glucoseRepo, foodRepo)
 
-	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, insulinUC, activityUC, noteUC, diaryUC, loc, log)
+	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, insulinUC, activityUC, noteUC, diaryUC, bolusUC, loc, log)
 
 	messenger := &telegramMessenger{bot: bot, log: log}
 	reminderScheduler := scheduler.NewReminderScheduler(reminderRepo, activityRepo, glucoseRepo, messenger, log)

@@ -25,11 +25,12 @@ func TestSaveDose_Valid_Bolus(t *testing.T) {
 			assert.InDelta(t, 8.0, d.DoseUnits, 0.001)
 			assert.Equal(t, domain.InsulinTypeBolus, d.InsulinType)
 			assert.Equal(t, "Новорапид", d.Drug)
+			assert.Equal(t, "manual", d.Source)
 			return nil
 		})
 
 	uc := insulin.New(repo)
-	err := uc.SaveDose(context.Background(), 1, 8.0, domain.InsulinTypeBolus, "Новорапид")
+	err := uc.SaveDose(context.Background(), 1, 8.0, domain.InsulinTypeBolus, "Новорапид", "manual")
 	require.NoError(t, err)
 }
 
@@ -46,7 +47,7 @@ func TestSaveDose_Valid_Basal_NoDrug(t *testing.T) {
 		})
 
 	uc := insulin.New(repo)
-	err := uc.SaveDose(context.Background(), 1, 20.0, domain.InsulinTypeBasal, "")
+	err := uc.SaveDose(context.Background(), 1, 20.0, domain.InsulinTypeBasal, "", "manual")
 	require.NoError(t, err)
 }
 
@@ -55,7 +56,7 @@ func TestSaveDose_ZeroDose_Error(t *testing.T) {
 	repo := mocks.NewMockInsulinRepository(ctrl)
 
 	uc := insulin.New(repo)
-	err := uc.SaveDose(context.Background(), 1, 0, domain.InsulinTypeBolus, "")
+	err := uc.SaveDose(context.Background(), 1, 0, domain.InsulinTypeBolus, "", "manual")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "dose must be positive")
 }
@@ -65,7 +66,7 @@ func TestSaveDose_NegativeDose_Error(t *testing.T) {
 	repo := mocks.NewMockInsulinRepository(ctrl)
 
 	uc := insulin.New(repo)
-	err := uc.SaveDose(context.Background(), 1, -1, domain.InsulinTypeBolus, "")
+	err := uc.SaveDose(context.Background(), 1, -1, domain.InsulinTypeBolus, "", "manual")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "dose must be positive")
 }
@@ -75,7 +76,7 @@ func TestSaveDose_TooHighDose_Error(t *testing.T) {
 	repo := mocks.NewMockInsulinRepository(ctrl)
 
 	uc := insulin.New(repo)
-	err := uc.SaveDose(context.Background(), 1, 201, domain.InsulinTypeBolus, "")
+	err := uc.SaveDose(context.Background(), 1, 201, domain.InsulinTypeBolus, "", "manual")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "out of range")
 }
@@ -87,7 +88,7 @@ func TestSaveDose_MaxBoundary_OK(t *testing.T) {
 	repo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil)
 
 	uc := insulin.New(repo)
-	err := uc.SaveDose(context.Background(), 1, 200.0, domain.InsulinTypeBolus, "")
+	err := uc.SaveDose(context.Background(), 1, 200.0, domain.InsulinTypeBolus, "", "manual")
 	require.NoError(t, err)
 }
 
@@ -98,7 +99,7 @@ func TestSaveDose_RepoError(t *testing.T) {
 	repo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 	uc := insulin.New(repo)
-	err := uc.SaveDose(context.Background(), 1, 10.0, domain.InsulinTypeBolus, "")
+	err := uc.SaveDose(context.Background(), 1, 10.0, domain.InsulinTypeBolus, "", "manual")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "db error")
 }

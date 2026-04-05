@@ -303,6 +303,29 @@ func TestUpdateCarbsPerUnit_RepoError(t *testing.T) {
 	assert.Contains(t, err.Error(), "db error")
 }
 
+func TestUpdateBolusDrug_Valid(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := mocks.NewMockUserRepository(ctrl)
+	extAccRepo := mocks.NewMockExternalAccountRepository(ctrl)
+	uc := user.New(userRepo, extAccRepo)
+
+	userRepo.EXPECT().UpdateBolusDrug(gomock.Any(), int64(1), "novorapid").Return(nil)
+
+	err := uc.UpdateBolusDrug(context.Background(), 1, "novorapid")
+	assert.NoError(t, err)
+}
+
+func TestUpdateBolusDrug_UnknownDrug(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := mocks.NewMockUserRepository(ctrl)
+	extAccRepo := mocks.NewMockExternalAccountRepository(ctrl)
+	uc := user.New(userRepo, extAccRepo)
+
+	err := uc.UpdateBolusDrug(context.Background(), 1, "unknown_drug")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown bolus drug")
+}
+
 func TestUpdateSettings(t *testing.T) {
 	type args struct {
 		userID    int64

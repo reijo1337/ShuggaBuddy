@@ -57,15 +57,15 @@ func (mr *MockInsulinUseCaseMockRecorder) GetLastDoses(ctx, userID, limit any) *
 }
 
 // SaveDose mocks base method.
-func (m *MockInsulinUseCase) SaveDose(ctx context.Context, userID int64, dose float64, insulinType domain.InsulinType, drug string) error {
+func (m *MockInsulinUseCase) SaveDose(ctx context.Context, userID int64, dose float64, insulinType domain.InsulinType, drug, source string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveDose", ctx, userID, dose, insulinType, drug)
+	ret := m.ctrl.Call(m, "SaveDose", ctx, userID, dose, insulinType, drug, source)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SaveDose indicates an expected call of SaveDose.
-func (mr *MockInsulinUseCaseMockRecorder) SaveDose(ctx, userID, dose, insulinType, drug any) *gomock.Call {
+func (mr *MockInsulinUseCaseMockRecorder) SaveDose(ctx, userID, dose, insulinType, drug, source any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveDose", reflect.TypeOf((*MockInsulinUseCase)(nil).SaveDose), ctx, userID, dose, insulinType, drug)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveDose", reflect.TypeOf((*MockInsulinUseCase)(nil).SaveDose), ctx, userID, dose, insulinType, drug, source)
 }

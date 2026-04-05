@@ -26,7 +26,7 @@ func TestHandleCallback_InsulinStart(t *testing.T) {
 	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:insulin"))
 
 	require.Len(t, bot.sent, 1)
@@ -48,7 +48,7 @@ func TestHandleCallback_InsulinTypeBolus(t *testing.T) {
 	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:insulin"))
 	bot.sent = nil
 
@@ -68,7 +68,7 @@ func TestHandleInsulinDoseInput_Valid_NoAnomaly(t *testing.T) {
 	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinDose)
 	sess.Data["type"] = string(domain.InsulinTypeBolus)
 
@@ -99,7 +99,7 @@ func TestHandleInsulinDoseInput_InvalidText(t *testing.T) {
 	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinDose)
 	sess.Data["type"] = string(domain.InsulinTypeBolus)
 
@@ -120,7 +120,7 @@ func TestHandleInsulinDoseInput_Zero(t *testing.T) {
 	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinDose)
 	sess.Data["type"] = string(domain.InsulinTypeBolus)
 
@@ -141,7 +141,7 @@ func TestHandleInsulinDoseInput_Anomalous_ShowsWarning(t *testing.T) {
 	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinDose)
 	sess.Data["type"] = string(domain.InsulinTypeBolus)
 
@@ -181,7 +181,7 @@ func TestHandleCallback_InsulinConfirm(t *testing.T) {
 	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinConfirm)
 	sess.Data["type"] = string(domain.InsulinTypeBolus)
 	sess.Data["dose"] = float64(60)
@@ -208,10 +208,10 @@ func TestHandleCallback_InsulinSkipDrug(t *testing.T) {
 		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)
 	insulinUC.EXPECT().
-		SaveDose(gomock.Any(), int64(1), float64(8), domain.InsulinTypeBolus, "").
+		SaveDose(gomock.Any(), int64(1), float64(8), domain.InsulinTypeBolus, "", "manual").
 		Return(nil)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinDrug)
 	sess.Data["type"] = string(domain.InsulinTypeBolus)
 	sess.Data["dose"] = float64(8)
@@ -240,10 +240,10 @@ func TestHandleInsulinDrugInput_WithDrug(t *testing.T) {
 		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)
 	insulinUC.EXPECT().
-		SaveDose(gomock.Any(), int64(1), float64(20), domain.InsulinTypeBasal, "Лантус").
+		SaveDose(gomock.Any(), int64(1), float64(20), domain.InsulinTypeBasal, "Лантус", "manual").
 		Return(nil)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinDrug)
 	sess.Data["type"] = string(domain.InsulinTypeBasal)
 	sess.Data["dose"] = float64(20)
@@ -271,10 +271,10 @@ func TestHandleInsulinDrugInput_SaveError(t *testing.T) {
 		GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)
 	insulinUC.EXPECT().
-		SaveDose(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		SaveDose(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(errors.New("db error"))
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinDrug)
 	sess.Data["type"] = string(domain.InsulinTypeBolus)
 	sess.Data["dose"] = float64(8)
@@ -296,7 +296,7 @@ func TestHandleCallback_InsulinCancel(t *testing.T) {
 	insulinUC := tgmocks.NewMockInsulinUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, glucUC, foodUC, insulinUC, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionInsulin, telegram.StepInsulinConfirm)
 	sess.Data["type"] = string(domain.InsulinTypeBolus)
 	sess.Data["dose"] = float64(60)

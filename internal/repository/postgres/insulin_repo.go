@@ -20,9 +20,9 @@ func NewInsulinRepo(pool *pgxpool.Pool) *InsulinRepo {
 
 func (r *InsulinRepo) Save(ctx context.Context, dose *domain.InsulinDose) error {
 	_, err := r.pool.Exec(ctx,
-		`INSERT INTO insulin_doses (user_id, dose_units, insulin_type, drug)
-		 VALUES ($1, $2, $3, $4)`,
-		dose.UserID, dose.DoseUnits, dose.InsulinType, dose.Drug,
+		`INSERT INTO insulin_doses (user_id, dose_units, insulin_type, drug, source)
+		 VALUES ($1, $2, $3, $4, $5)`,
+		dose.UserID, dose.DoseUnits, dose.InsulinType, dose.Drug, dose.Source,
 	)
 	if err != nil {
 		return fmt.Errorf("InsulinRepo.Save: %w", err)
@@ -32,7 +32,7 @@ func (r *InsulinRepo) Save(ctx context.Context, dose *domain.InsulinDose) error 
 
 func (r *InsulinRepo) GetLast(ctx context.Context, userID int64, limit int) ([]domain.InsulinDose, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, dose_units, insulin_type, drug, recorded_at
+		`SELECT id, user_id, dose_units, insulin_type, drug, source, recorded_at
 		 FROM insulin_doses
 		 WHERE user_id = $1
 		 ORDER BY recorded_at DESC
@@ -47,7 +47,7 @@ func (r *InsulinRepo) GetLast(ctx context.Context, userID int64, limit int) ([]d
 	var doses []domain.InsulinDose
 	for rows.Next() {
 		var d domain.InsulinDose
-		if err := rows.Scan(&d.ID, &d.UserID, &d.DoseUnits, &d.InsulinType, &d.Drug, &d.RecordedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.UserID, &d.DoseUnits, &d.InsulinType, &d.Drug, &d.Source, &d.RecordedAt); err != nil {
 			return nil, fmt.Errorf("InsulinRepo.GetLast: scan: %w", err)
 		}
 		doses = append(doses, d)
@@ -60,7 +60,7 @@ func (r *InsulinRepo) GetLast(ctx context.Context, userID int64, limit int) ([]d
 
 func (r *InsulinRepo) GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]*domain.InsulinDose, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, dose_units, insulin_type, drug, recorded_at
+		`SELECT id, user_id, dose_units, insulin_type, drug, source, recorded_at
 		 FROM insulin_doses
 		 WHERE user_id = $1 AND recorded_at >= $2 AND recorded_at < $3
 		 ORDER BY recorded_at DESC`,
@@ -74,7 +74,7 @@ func (r *InsulinRepo) GetByTimeRange(ctx context.Context, userID int64, from, to
 	var doses []*domain.InsulinDose
 	for rows.Next() {
 		d := &domain.InsulinDose{}
-		if err := rows.Scan(&d.ID, &d.UserID, &d.DoseUnits, &d.InsulinType, &d.Drug, &d.RecordedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.UserID, &d.DoseUnits, &d.InsulinType, &d.Drug, &d.Source, &d.RecordedAt); err != nil {
 			return nil, fmt.Errorf("InsulinRepo.GetByTimeRange: scan: %w", err)
 		}
 		doses = append(doses, d)

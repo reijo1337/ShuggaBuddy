@@ -25,6 +25,7 @@ type User struct {
 	TargetMaxMmol float64   `json:"target_max_mmol"` // upper bound of target glucose range
 	BasalDrug     string    `json:"basal_drug"`      // name of basal insulin drug, empty = not set
 	BasalTime     string    `json:"basal_time"`      // preferred injection time (HH:MM), empty = not set
+	BolusDrug     string    `json:"bolus_drug"`      // key from BolusInsulinCatalog, empty = not set
 	Timezone      string    `json:"timezone"`        // IANA timezone name, e.g. "Europe/Moscow", default "UTC"
 	CreatedAt     time.Time `json:"created_at"`
 }
@@ -52,6 +53,7 @@ type UserRepository interface {
 	UpdateCarbsPerUnit(ctx context.Context, id int64, grams float64) error
 	UpdateSettings(ctx context.Context, userID int64, targetMin, targetMax float64, basalDrug, basalTime string) error
 	UpdateTimezone(ctx context.Context, userID int64, timezone string) error
+	UpdateBolusDrug(ctx context.Context, userID int64, drug string) error
 }
 
 //go:generate mockgen -destination=mocks/mock_external_account_repository.go -package=mocks . ExternalAccountRepository

@@ -40,9 +40,16 @@ func (h *Handler) handleInsulinTypeSelect(cb *tgbotapi.CallbackQuery, insulinTyp
 		return
 	}
 	sess.Data["type"] = string(insulinType)
+
+	if insulinType == domain.InsulinTypeBolus {
+		h.sessions.Delete(cb.Message.Chat.ID)
+		h.handleBolusMethodChoice(cb)
+		return
+	}
+
+	// Basal: proceed to dose input as before
 	sess.Step = stepInsulinDose
 	h.sessions.Store(cb.Message.Chat.ID, sess)
-
 	h.replyWithKeyboard(cb.Message.Chat.ID, h.loc.T("insulin_dose_prompt"), h.backToMenuKeyboard())
 }
 
@@ -143,7 +150,7 @@ func (h *Handler) saveInsulinDose(ctx context.Context, chatID, fromID int64, ses
 		return
 	}
 
-	if err := h.insulinUC.SaveDose(ctx, user.ID, dose, insulinType, drug); err != nil {
+	if err := h.insulinUC.SaveDose(ctx, user.ID, dose, insulinType, drug, "manual"); err != nil {
 		h.log.Error("saveInsulinDose: failed to save dose", zap.Error(err))
 		h.reply(chatID, h.loc.T("error_internal"))
 		return

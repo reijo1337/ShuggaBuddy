@@ -22,6 +22,7 @@ type Handler struct {
 	activityUC ActivityUseCase
 	noteUC     NoteUseCase
 	diaryUC    DiaryUseCase
+	bolusUC    BolusUseCase
 	loc        *i18n.Localizer
 	log        *zap.Logger
 
@@ -38,6 +39,7 @@ func NewHandler(
 	activityUC ActivityUseCase,
 	noteUC NoteUseCase,
 	diaryUC DiaryUseCase,
+	bolusUC BolusUseCase,
 	loc *i18n.Localizer,
 	log *zap.Logger,
 ) *Handler {
@@ -50,6 +52,7 @@ func NewHandler(
 		activityUC: activityUC,
 		noteUC:     noteUC,
 		diaryUC:    diaryUC,
+		bolusUC:    bolusUC,
 		loc:        loc,
 		log:        log,
 	}
@@ -109,6 +112,8 @@ func (h *Handler) handleSessionInput(ctx context.Context, msg *tgbotapi.Message,
 		h.handleDiaryText(ctx, msg, sess)
 	case sessionProfile:
 		h.handleProfileStep(ctx, msg, sess)
+	case sessionBolus:
+		h.handleBolusStep(ctx, msg, sess)
 	}
 }
 

@@ -12,6 +12,7 @@ const (
 	sessionNote      sessionType = "note"
 	sessionDiary     sessionType = "diary"
 	sessionProfile   sessionType = "profile"
+	sessionBolus     sessionType = "bolus"
 )
 
 // sessionStep identifies the current step within a session flow.
@@ -46,6 +47,10 @@ const (
 	stepProfileTargetMax
 	stepProfileBasalDrug
 	stepProfileBasalTime
+
+	stepBolusGlucose       // waiting for glucose confirmation or manual input
+	stepBolusGlucoseManual // waiting for manual glucose text input
+	stepBolusCarbs         // waiting for carbs text input
 )
 
 // Session holds the state of an in-progress multi-step dialog for a chat.
