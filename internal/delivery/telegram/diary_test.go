@@ -37,7 +37,7 @@ func TestHandleDiaryShow_Empty(t *testing.T) {
 	diaryUC := tgmocks.NewMockDiaryUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, diaryUC, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, diaryUC, nil, nil, loc)
 
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").
 		Return(testUser, testAcc, nil)
@@ -59,7 +59,7 @@ func TestHandleDiaryShow_WithEntries(t *testing.T) {
 	diaryUC := tgmocks.NewMockDiaryUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, diaryUC, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, diaryUC, nil, nil, loc)
 
 	now := time.Now()
 	glucEntry := &domain.DiaryEntry{
@@ -93,7 +93,7 @@ func TestHandleDiaryCallback_NavPrev(t *testing.T) {
 	diaryUC := tgmocks.NewMockDiaryUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, diaryUC, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, diaryUC, nil, nil, loc)
 
 	expectedDate := time.Date(2026, 3, 27, 0, 0, 0, 0, time.UTC)
 
@@ -119,7 +119,7 @@ func TestHandleDiaryCallback_DatePrompt(t *testing.T) {
 	bot := &spyBot{}
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	h.HandleCallback(context.Background(), testCallbackWithMessageID(123, 100, 42, "diary:date"))
 
@@ -140,7 +140,7 @@ func TestHandleDiaryText_ValidDate(t *testing.T) {
 	diaryUC := tgmocks.NewMockDiaryUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, diaryUC, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, diaryUC, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionDiary, telegram.StepDiaryDate)
 	h.SetSession(100, sess)
@@ -165,7 +165,7 @@ func TestHandleDiaryText_InvalidDate(t *testing.T) {
 	bot := &spyBot{}
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionDiary, telegram.StepDiaryDate)
 	h.SetSession(100, sess)

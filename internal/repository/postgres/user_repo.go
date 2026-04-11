@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,8 +24,8 @@ func NewUserRepo(pool *pgxpool.Pool) *UserRepo {
 func (r *UserRepo) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	u := &domain.User{}
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, units, carbs_per_unit, created_at, target_min_mmol, target_max_mmol, basal_drug, basal_time, bolus_drug, timezone FROM users WHERE id = $1`, id,
-	).Scan(&u.ID, &u.Units, &u.CarbsPerUnit, &u.CreatedAt, &u.TargetMinMmol, &u.TargetMaxMmol, &u.BasalDrug, &u.BasalTime, &u.BolusDrug, &u.Timezone)
+		`SELECT id, units, carbs_per_unit, created_at, target_min_mmol, target_max_mmol, basal_drug, basal_time, bolus_drug, timezone, basal_dose, advisor_interval_days, advisor_last_sent_at FROM users WHERE id = $1`, id,
+	).Scan(&u.ID, &u.Units, &u.CarbsPerUnit, &u.CreatedAt, &u.TargetMinMmol, &u.TargetMaxMmol, &u.BasalDrug, &u.BasalTime, &u.BolusDrug, &u.Timezone, &u.BasalDose, &u.AdvisorIntervalDays, &u.AdvisorLastSentAt)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -101,4 +102,72 @@ func (r *UserRepo) UpdateSettings(ctx context.Context, userID int64, targetMin, 
 		return fmt.Errorf("UserRepo.UpdateSettings: %w", err)
 	}
 	return nil
+}
+
+func (r *UserRepo) UpdateBasalDose(ctx context.Context, userID int64, dose float64) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET basal_dose = $1 WHERE id = $2`,
+		dose, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("UserRepo.UpdateBasalDose: %w", err)
+	}
+	return nil
+}
+
+func (r *UserRepo) UpdateAdvisorInterval(ctx context.Context, userID int64, days int) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET advisor_interval_days = $1 WHERE id = $2`,
+		days, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("UserRepo.UpdateAdvisorInterval: %w", err)
+	}
+	return nil
+}
+
+func (r *UserRepo) UpdateAdvisorLastSentAt(ctx context.Context, userID int64, sentAt time.Time) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET advisor_last_sent_at = $1 WHERE id = $2`,
+		sentAt, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("UserRepo.UpdateAdvisorLastSentAt: %w", err)
+	}
+	return nil
+}
+
+func (r *UserRepo) GetUsersForAdvisor(ctx context.Context, now time.Time) ([]domain.User, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, units, carbs_per_unit, created_at, target_min_mmol, target_max_mmol,
+		        basal_drug, basal_time, bolus_drug, timezone,
+		        basal_dose, advisor_interval_days, advisor_last_sent_at
+		 FROM users
+		 WHERE advisor_interval_days > 0
+		   AND (advisor_last_sent_at IS NULL
+		        OR advisor_last_sent_at + (advisor_interval_days * INTERVAL '1 day') <= $1)`,
+		now,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("UserRepo.GetUsersForAdvisor: %w", err)
+	}
+	defer rows.Close()
+
+	var users []domain.User
+	for rows.Next() {
+		var u domain.User
+		if err := rows.Scan(
+			&u.ID, &u.Units, &u.CarbsPerUnit, &u.CreatedAt,
+			&u.TargetMinMmol, &u.TargetMaxMmol,
+			&u.BasalDrug, &u.BasalTime, &u.BolusDrug, &u.Timezone,
+			&u.BasalDose, &u.AdvisorIntervalDays, &u.AdvisorLastSentAt,
+		); err != nil {
+			return nil, fmt.Errorf("UserRepo.GetUsersForAdvisor scan: %w", err)
+		}
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("UserRepo.GetUsersForAdvisor rows: %w", err)
+	}
+	return users, nil
 }

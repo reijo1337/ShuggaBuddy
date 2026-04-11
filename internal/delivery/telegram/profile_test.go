@@ -33,7 +33,7 @@ func TestHandleProfileCb_ShowsTargetRange(t *testing.T) {
 	acc := &domain.ExternalAccount{DisplayName: "Test"}
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").Return(user, acc, nil)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:profile"))
 
 	require.Len(t, bot.sent, 1)
@@ -51,7 +51,7 @@ func TestHandleProfileTargetRange_ValidFlow(t *testing.T) {
 	loc := newTestLocalizer(t)
 
 	// Step 1: start target range flow
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "profile:target_range"))
 
 	require.Len(t, bot.sent, 1)
@@ -86,7 +86,7 @@ func TestHandleProfileTargetRange_InvalidMin(t *testing.T) {
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 	sess := telegram.NewSession(telegram.SessionProfile, telegram.StepProfileTargetMin)
 	h.SetSession(456, sess)
 
@@ -107,7 +107,7 @@ func TestHandleProfileTargetRange_MaxLessThanMin(t *testing.T) {
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	// Simulate having entered min=5.0
 	sess := telegram.NewSession(telegram.SessionProfile, telegram.StepProfileTargetMax)
@@ -128,7 +128,7 @@ func TestHandleProfileBasal_ValidFlow(t *testing.T) {
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	// Step 1: start basal flow
 	h.HandleCallback(context.Background(), testCallback(123, 456, "profile:basal"))
@@ -164,7 +164,7 @@ func TestHandleProfileBasal_SkipDrug_SkipTime(t *testing.T) {
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	// Start basal flow
 	h.HandleCallback(context.Background(), testCallback(123, 456, "profile:basal"))
@@ -197,7 +197,7 @@ func TestHandleProfileBasal_InvalidTime(t *testing.T) {
 	userUC := tgmocks.NewMockUserUseCase(ctrl)
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionProfile, telegram.StepProfileBasalTime)
 	sess.Data["basal_drug"] = "Lantus"
@@ -222,7 +222,7 @@ func TestHandleProfileCb_KeyboardHasNewButtons(t *testing.T) {
 
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").Return(testUser, testAcc, nil)
 
-	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, userUC, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "menu:profile"))
 
 	require.Len(t, bot.sent, 1)

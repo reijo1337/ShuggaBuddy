@@ -82,6 +82,8 @@ func (h *Handler) handleProfileStep(ctx context.Context, msg *tgbotapi.Message, 
 		h.handleProfileBasalDrugStep(ctx, msg, sess)
 	case stepProfileBasalTime:
 		h.handleProfileBasalTimeStep(ctx, msg, sess)
+	case stepProfileBasalDose:
+		h.handleProfileBasalDoseInput(ctx, msg, sess)
 	}
 }
 

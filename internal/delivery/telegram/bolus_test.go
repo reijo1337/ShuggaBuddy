@@ -31,7 +31,7 @@ func TestBolusStart_NoDrugSet(t *testing.T) {
 
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").Return(user, acc, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, bolusUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, bolusUC, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "bolus:start"))
 
 	require.Len(t, bot.sent, 1)
@@ -76,7 +76,7 @@ func TestBolusStart_FreshGlucose(t *testing.T) {
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").Return(user, acc, nil)
 	glucUC.EXPECT().GetLastReadings(gomock.Any(), int64(1), 1).Return(readings, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, bolusUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, bolusUC, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "bolus:start"))
 
 	require.Len(t, bot.sent, 1)
@@ -123,7 +123,7 @@ func TestBolusStart_NoFreshGlucose(t *testing.T) {
 	userUC.EXPECT().GetProfile(gomock.Any(), domain.ProviderTelegram, "123").Return(user, acc, nil)
 	glucUC.EXPECT().GetLastReadings(gomock.Any(), int64(1), 1).Return([]domain.GlucoseReading{}, nil)
 
-	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, bolusUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, bolusUC, nil, loc)
 	h.HandleCallback(context.Background(), testCallback(123, 456, "bolus:start"))
 
 	require.Len(t, bot.sent, 1)
@@ -145,7 +145,7 @@ func TestBolusCalculation_InsufficientData(t *testing.T) {
 		Calculate(gomock.Any(), int64(1), float64(7.5), gomock.Any(), gomock.Any()).
 		Return(nil, errors.New("insufficient data"))
 
-	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, bolusUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, nil, nil, nil, nil, nil, bolusUC, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionBolus, telegram.StepBolusCarbs)
 	sess.Data["user_id"] = int64(1)
@@ -185,7 +185,7 @@ func TestBolusSave_Success(t *testing.T) {
 		SaveDose(gomock.Any(), int64(1), float64(5.0), domain.InsulinTypeBolus, "NovoRapid", "bolus_calculator").
 		Return(nil)
 
-	h := newTestHandler(bot, userUC, glucUC, nil, insulinUC, nil, nil, nil, bolusUC, loc)
+	h := newTestHandler(bot, userUC, glucUC, nil, insulinUC, nil, nil, nil, bolusUC, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionBolus, telegram.StepBolusCarbs)
 	sess.Data["user_id"] = int64(1)
@@ -216,7 +216,7 @@ func TestBolusDetails_ShowsBreakdown(t *testing.T) {
 		ISF:            2.5,
 	}
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionBolus, telegram.StepBolusCarbs)
 	sess.Data["recommendation"] = rec
@@ -238,7 +238,7 @@ func TestBolusCancel_ClearsSessionAndShowsMenu(t *testing.T) {
 	bot := &spyBot{}
 	loc := newTestLocalizer(t)
 
-	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, loc)
+	h := newTestHandler(bot, nil, nil, nil, nil, nil, nil, nil, nil, nil, loc)
 
 	sess := telegram.NewSession(telegram.SessionBolus, telegram.StepBolusCarbs)
 	sess.Data["user_id"] = int64(1)

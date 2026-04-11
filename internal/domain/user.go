@@ -18,16 +18,19 @@ const MmolToMgdl = 18.0182
 
 // User представляет профиль пользователя бота.
 type User struct {
-	ID            int64     `json:"id"`
-	Units         Units     `json:"units"`
-	CarbsPerUnit  float64   `json:"carbs_per_unit"`  // grams of carbs per 1 bread unit (ХЕ), default 12
-	TargetMinMmol float64   `json:"target_min_mmol"` // lower bound of target glucose range
-	TargetMaxMmol float64   `json:"target_max_mmol"` // upper bound of target glucose range
-	BasalDrug     string    `json:"basal_drug"`      // name of basal insulin drug, empty = not set
-	BasalTime     string    `json:"basal_time"`      // preferred injection time (HH:MM), empty = not set
-	BolusDrug     string    `json:"bolus_drug"`      // key from BolusInsulinCatalog, empty = not set
-	Timezone      string    `json:"timezone"`        // IANA timezone name, e.g. "Europe/Moscow", default "UTC"
-	CreatedAt     time.Time `json:"created_at"`
+	ID                  int64      `json:"id"`
+	Units               Units      `json:"units"`
+	CarbsPerUnit        float64    `json:"carbs_per_unit"`  // grams of carbs per 1 bread unit (ХЕ), default 12
+	TargetMinMmol       float64    `json:"target_min_mmol"` // lower bound of target glucose range
+	TargetMaxMmol       float64    `json:"target_max_mmol"` // upper bound of target glucose range
+	BasalDrug           string     `json:"basal_drug"`      // name of basal insulin drug, empty = not set
+	BasalTime           string     `json:"basal_time"`      // preferred injection time (HH:MM), empty = not set
+	BolusDrug           string     `json:"bolus_drug"`      // key from BolusInsulinCatalog, empty = not set
+	Timezone            string     `json:"timezone"`        // IANA timezone name, e.g. "Europe/Moscow", default "UTC"
+	BasalDose           float64    `json:"basal_dose"`
+	AdvisorIntervalDays int        `json:"advisor_interval_days"`
+	AdvisorLastSentAt   *time.Time `json:"advisor_last_sent_at"`
+	CreatedAt           time.Time  `json:"created_at"`
 }
 
 type Provider string
@@ -54,6 +57,10 @@ type UserRepository interface {
 	UpdateSettings(ctx context.Context, userID int64, targetMin, targetMax float64, basalDrug, basalTime string) error
 	UpdateTimezone(ctx context.Context, userID int64, timezone string) error
 	UpdateBolusDrug(ctx context.Context, userID int64, drug string) error
+	UpdateBasalDose(ctx context.Context, userID int64, dose float64) error
+	UpdateAdvisorInterval(ctx context.Context, userID int64, days int) error
+	UpdateAdvisorLastSentAt(ctx context.Context, userID int64, sentAt time.Time) error
+	GetUsersForAdvisor(ctx context.Context, now time.Time) ([]User, error)
 }
 
 //go:generate mockgen -destination=mocks/mock_external_account_repository.go -package=mocks . ExternalAccountRepository
@@ -61,4 +68,5 @@ type UserRepository interface {
 type ExternalAccountRepository interface {
 	GetByProvider(ctx context.Context, provider Provider, externalID string) (*ExternalAccount, error)
 	Create(ctx context.Context, account *ExternalAccount) error
+	GetByUserID(ctx context.Context, userID int64, provider Provider) (*ExternalAccount, error)
 }

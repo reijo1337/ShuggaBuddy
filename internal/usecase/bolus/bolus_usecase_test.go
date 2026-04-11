@@ -10,6 +10,7 @@ import (
 
 	"github.com/gmtantsevov/shuggabuddy/internal/domain"
 	"github.com/gmtantsevov/shuggabuddy/internal/domain/mocks"
+	"github.com/gmtantsevov/shuggabuddy/internal/usecase/insulincalc"
 )
 
 // --- IOB Tests ---
@@ -80,7 +81,7 @@ func TestDeriveICR_Enough(t *testing.T) {
 		glucoseReadings = append(glucoseReadings, domain.GlucoseReading{ValueMmol: 7.0, RecordedAt: baseTime.Add(3 * time.Hour)})
 	}
 
-	icr, err := deriveICR(foods, doses, glucoseReadings, targetMin, targetMax)
+	icr, err := insulincalc.DeriveICR(foods, doses, glucoseReadings, targetMin, targetMax)
 	assert.NoError(t, err)
 	assert.InDelta(t, 10.0, icr, 0.01)
 }
@@ -91,7 +92,7 @@ func TestDeriveICR_NotEnoughChains(t *testing.T) {
 	doses := []domain.InsulinDose{{DoseUnits: 6, InsulinType: domain.InsulinTypeBolus, RecordedAt: now.Add(5 * time.Minute)}}
 	glucoseReadings := []domain.GlucoseReading{{ValueMmol: 7.0, RecordedAt: now.Add(3 * time.Hour)}}
 
-	_, err := deriveICR(foods, doses, glucoseReadings, 3.9, 10.0)
+	_, err := insulincalc.DeriveICR(foods, doses, glucoseReadings, 3.9, 10.0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "insufficient data")
 }
@@ -115,7 +116,7 @@ func TestDeriveICR_OutOfRangeGlucoseExcluded(t *testing.T) {
 		glucoseReadings = append(glucoseReadings, domain.GlucoseReading{ValueMmol: 15.0, RecordedAt: baseTime.Add(3 * time.Hour)})
 	}
 
-	_, err := deriveICR(foods, doses, glucoseReadings, 3.9, 10.0)
+	_, err := insulincalc.DeriveICR(foods, doses, glucoseReadings, 3.9, 10.0)
 	assert.Error(t, err)
 }
 
@@ -136,7 +137,7 @@ func TestDeriveISF_Enough(t *testing.T) {
 		)
 	}
 
-	isf, err := deriveISF(foods, doses, glucoseReadings)
+	isf, err := insulincalc.DeriveISF(foods, doses, glucoseReadings)
 	assert.NoError(t, err)
 	assert.InDelta(t, 2.0, isf, 0.01)
 }
@@ -148,7 +149,7 @@ func TestDeriveISF_NotEnoughChains(t *testing.T) {
 		{ValueMmol: 12.0, RecordedAt: now.Add(-10 * time.Minute)},
 		{ValueMmol: 8.0, RecordedAt: now.Add(3 * time.Hour)},
 	}
-	_, err := deriveISF(nil, doses, glucoseReadings)
+	_, err := insulincalc.DeriveISF(nil, doses, glucoseReadings)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "insufficient data")
 }
@@ -168,7 +169,7 @@ func TestDeriveISF_SkipsDosesWithFood(t *testing.T) {
 			domain.GlucoseReading{ValueMmol: 8.0, RecordedAt: bolusTime.Add(3 * time.Hour)},
 		)
 	}
-	_, err := deriveISF(foods, doses, glucoseReadings)
+	_, err := insulincalc.DeriveISF(foods, doses, glucoseReadings)
 	assert.Error(t, err)
 }
 

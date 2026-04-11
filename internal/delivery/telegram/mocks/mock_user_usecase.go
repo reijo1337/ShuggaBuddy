@@ -74,6 +74,34 @@ func (mr *MockUserUseCaseMockRecorder) GetProfile(ctx, provider, externalID any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfile", reflect.TypeOf((*MockUserUseCase)(nil).GetProfile), ctx, provider, externalID)
 }
 
+// UpdateAdvisorInterval mocks base method.
+func (m *MockUserUseCase) UpdateAdvisorInterval(ctx context.Context, userID int64, days int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAdvisorInterval", ctx, userID, days)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAdvisorInterval indicates an expected call of UpdateAdvisorInterval.
+func (mr *MockUserUseCaseMockRecorder) UpdateAdvisorInterval(ctx, userID, days any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAdvisorInterval", reflect.TypeOf((*MockUserUseCase)(nil).UpdateAdvisorInterval), ctx, userID, days)
+}
+
+// UpdateBasalDose mocks base method.
+func (m *MockUserUseCase) UpdateBasalDose(ctx context.Context, userID int64, dose float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBasalDose", ctx, userID, dose)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateBasalDose indicates an expected call of UpdateBasalDose.
+func (mr *MockUserUseCaseMockRecorder) UpdateBasalDose(ctx, userID, dose any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBasalDose", reflect.TypeOf((*MockUserUseCase)(nil).UpdateBasalDose), ctx, userID, dose)
+}
+
 // UpdateBolusDrug mocks base method.
 func (m *MockUserUseCase) UpdateBolusDrug(ctx context.Context, userID int64, drug string) error {
 	m.ctrl.T.Helper()

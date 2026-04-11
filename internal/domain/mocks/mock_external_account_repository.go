@@ -69,3 +69,18 @@ func (mr *MockExternalAccountRepositoryMockRecorder) GetByProvider(ctx, provider
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByProvider", reflect.TypeOf((*MockExternalAccountRepository)(nil).GetByProvider), ctx, provider, externalID)
 }
+
+// GetByUserID mocks base method.
+func (m *MockExternalAccountRepository) GetByUserID(ctx context.Context, userID int64, provider domain.Provider) (*domain.ExternalAccount, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByUserID", ctx, userID, provider)
+	ret0, _ := ret[0].(*domain.ExternalAccount)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByUserID indicates an expected call of GetByUserID.
+func (mr *MockExternalAccountRepositoryMockRecorder) GetByUserID(ctx, userID, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByUserID", reflect.TypeOf((*MockExternalAccountRepository)(nil).GetByUserID), ctx, userID, provider)
+}

@@ -147,3 +147,21 @@ func (uc *UseCase) UpdateCarbsPerUnit(ctx context.Context, id int64, grams float
 
 	return nil
 }
+
+// UpdateBasalDose updates the user's basal insulin dose.
+// dose must be in [0.5, 200].
+func (uc *UseCase) UpdateBasalDose(ctx context.Context, userID int64, dose float64) error {
+	if dose < 0.5 || dose > 200.0 {
+		return fmt.Errorf("user.UpdateBasalDose: dose %.1f out of range [0.5–200]", dose)
+	}
+	return uc.userRepo.UpdateBasalDose(ctx, userID, dose)
+}
+
+// UpdateAdvisorInterval updates the advisor notification interval.
+// days must be 0 (disabled) or in [1, 90].
+func (uc *UseCase) UpdateAdvisorInterval(ctx context.Context, userID int64, days int) error {
+	if days < 0 || days > 90 {
+		return fmt.Errorf("user.UpdateAdvisorInterval: days %d out of range [0–90]", days)
+	}
+	return uc.userRepo.UpdateAdvisorInterval(ctx, userID, days)
+}

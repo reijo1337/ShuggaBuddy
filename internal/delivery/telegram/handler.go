@@ -23,6 +23,7 @@ type Handler struct {
 	noteUC     NoteUseCase
 	diaryUC    DiaryUseCase
 	bolusUC    BolusUseCase
+	advisorUC  DoseAdvisorUseCase
 	loc        *i18n.Localizer
 	log        *zap.Logger
 
@@ -40,6 +41,7 @@ func NewHandler(
 	noteUC NoteUseCase,
 	diaryUC DiaryUseCase,
 	bolusUC BolusUseCase,
+	advisorUC DoseAdvisorUseCase,
 	loc *i18n.Localizer,
 	log *zap.Logger,
 ) *Handler {
@@ -53,6 +55,7 @@ func NewHandler(
 		noteUC:     noteUC,
 		diaryUC:    diaryUC,
 		bolusUC:    bolusUC,
+		advisorUC:  advisorUC,
 		loc:        loc,
 		log:        log,
 	}
@@ -114,6 +117,8 @@ func (h *Handler) handleSessionInput(ctx context.Context, msg *tgbotapi.Message,
 		h.handleProfileStep(ctx, msg, sess)
 	case sessionBolus:
 		h.handleBolusStep(ctx, msg, sess)
+	case sessionAdvisor:
+		h.handleAdvisorStep(ctx, msg, sess)
 	}
 }
 
@@ -145,6 +150,9 @@ func (h *Handler) menuKeyboard() tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_analytics"), "menu:analytics"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_advisor"), "menu:advisor"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("btn_diary"), "menu:diary"),

@@ -50,6 +50,7 @@ make migrate-down # откатить последнюю миграцию
 | Калькулятор болюса | [bolus-calculator.md](docs/features/bolus-calculator.md) | Расчёт дозы по ICR/ISF/IOB из истории данных |
 | Заметки | [notes.md](docs/features/notes.md) | Самочувствие, болезнь, стресс, свободный текст |
 | Дневник | [diary.md](docs/features/diary.md) | Хронологический фид записей, навигация по дням |
+| Рекомендации по дозам | [dose-advisor.md](docs/features/dose-advisor.md) | Тренд-анализ базального/болюсного, автоуведомления |
 
 ---
 

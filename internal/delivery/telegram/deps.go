@@ -28,6 +28,8 @@ type UserUseCase interface {
 	UpdateSettings(ctx context.Context, userID int64, targetMin, targetMax float64, basalDrug, basalTime string) error
 	UpdateTimezone(ctx context.Context, userID int64, timezone string) error
 	UpdateBolusDrug(ctx context.Context, userID int64, drug string) error
+	UpdateBasalDose(ctx context.Context, userID int64, dose float64) error
+	UpdateAdvisorInterval(ctx context.Context, userID int64, days int) error
 }
 
 //go:generate mockgen -destination=mocks/mock_glucose_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram GlucoseUseCase
@@ -83,4 +85,11 @@ type DiaryUseCase interface {
 // BolusUseCase описывает бизнес-логику калькулятора болюса.
 type BolusUseCase interface {
 	Calculate(ctx context.Context, userID int64, currentGlucose, carbsGrams float64, now time.Time) (*domain.BolusRecommendation, error)
+}
+
+//go:generate mockgen -destination=mocks/mock_advisor_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram DoseAdvisorUseCase
+
+// DoseAdvisorUseCase описывает бизнес-логику рекомендаций по дозам.
+type DoseAdvisorUseCase interface {
+	Analyze(ctx context.Context, userID int64, now time.Time) (*domain.DoseAdvice, error)
 }

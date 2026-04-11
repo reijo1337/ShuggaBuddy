@@ -50,3 +50,22 @@ func (r *ExternalAccountRepo) Create(ctx context.Context, account *domain.Extern
 
 	return nil
 }
+
+func (r *ExternalAccountRepo) GetByUserID(ctx context.Context, userID int64, provider domain.Provider) (*domain.ExternalAccount, error) {
+	acc := &domain.ExternalAccount{}
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, user_id, provider, external_id, display_name, created_at
+		 FROM external_accounts
+		 WHERE user_id = $1 AND provider = $2`,
+		userID, provider,
+	).Scan(&acc.ID, &acc.UserID, &acc.Provider, &acc.ExternalID, &acc.DisplayName, &acc.CreatedAt)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("ExternalAccountRepo.GetByUserID: %w", err)
+	}
+
+	return acc, nil
+}

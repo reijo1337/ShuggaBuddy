@@ -3,19 +3,14 @@ package bolus
 import (
 	"context"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/gmtantsevov/shuggabuddy/internal/domain"
+	"github.com/gmtantsevov/shuggabuddy/internal/usecase/insulincalc"
 )
 
 const (
-	MinChains               = 5
-	LookbackDays            = 14
-	MealBolusWindowMin      = 15
-	CorrectionFoodWindowMin = 30
-	PostBolusCheckMinH      = 2.0
-	PostBolusCheckMaxH      = 4.0
+	lookbackDays = 14
 )
 
 // UseCase implements bolus recommendation logic.
@@ -58,170 +53,6 @@ func calculateIOB(doses []domain.InsulinDose, diaHours float64, now time.Time) f
 	return iob
 }
 
-// deriveICR derives insulin-to-carb ratio from historical meal+bolus+glucose chains.
-// Only chains where the post-meal glucose fell within the target range are used.
-func deriveICR(
-	foods []domain.FoodEntry,
-	doses []domain.InsulinDose,
-	glucoseReadings []domain.GlucoseReading,
-	targetMin, targetMax float64,
-) (float64, error) {
-	mealWindow := time.Duration(MealBolusWindowMin) * time.Minute
-	postMin := time.Duration(PostBolusCheckMinH * float64(time.Hour))
-	postMax := time.Duration(PostBolusCheckMaxH * float64(time.Hour))
-
-	var ratios []float64
-
-	for _, food := range foods {
-		var matchedDose *domain.InsulinDose
-		var bestGap time.Duration
-		for i := range doses {
-			if doses[i].InsulinType != domain.InsulinTypeBolus {
-				continue
-			}
-			gap := doses[i].RecordedAt.Sub(food.EatenAt)
-			if gap < 0 {
-				gap = -gap
-			}
-			if gap <= mealWindow && (matchedDose == nil || gap < bestGap) {
-				matchedDose = &doses[i]
-				bestGap = gap
-			}
-		}
-		if matchedDose == nil || matchedDose.DoseUnits <= 0 || food.CarbsGrams <= 0 {
-			continue
-		}
-
-		targetElapsed := time.Duration(3 * float64(time.Hour))
-		var postGlucose *domain.GlucoseReading
-		var bestDist time.Duration
-		for i := range glucoseReadings {
-			elapsed := glucoseReadings[i].RecordedAt.Sub(matchedDose.RecordedAt)
-			if elapsed >= postMin && elapsed <= postMax {
-				dist := elapsed - targetElapsed
-				if dist < 0 {
-					dist = -dist
-				}
-				if postGlucose == nil || dist < bestDist {
-					postGlucose = &glucoseReadings[i]
-					bestDist = dist
-				}
-			}
-		}
-		if postGlucose == nil {
-			continue
-		}
-
-		if postGlucose.ValueMmol < targetMin || postGlucose.ValueMmol > targetMax {
-			continue
-		}
-
-		ratios = append(ratios, food.CarbsGrams/matchedDose.DoseUnits)
-	}
-
-	if len(ratios) < MinChains {
-		return 0, fmt.Errorf("bolus.deriveICR: insufficient data (%d chains, need %d)", len(ratios), MinChains)
-	}
-
-	return median(ratios), nil
-}
-
-// deriveISF derives insulin sensitivity factor from correction-only boluses
-// (boluses without nearby food entries).
-func deriveISF(
-	foods []domain.FoodEntry,
-	doses []domain.InsulinDose,
-	glucoseReadings []domain.GlucoseReading,
-) (float64, error) {
-	foodWindow := time.Duration(CorrectionFoodWindowMin) * time.Minute
-	glucoseBeforeWindow := time.Duration(CorrectionFoodWindowMin) * time.Minute
-	postMin := time.Duration(PostBolusCheckMinH * float64(time.Hour))
-	postMax := time.Duration(PostBolusCheckMaxH * float64(time.Hour))
-
-	var factors []float64
-
-	for _, dose := range doses {
-		if dose.InsulinType != domain.InsulinTypeBolus || dose.DoseUnits <= 0 {
-			continue
-		}
-
-		hasFood := false
-		for _, f := range foods {
-			gap := dose.RecordedAt.Sub(f.EatenAt)
-			if gap < 0 {
-				gap = -gap
-			}
-			if gap <= foodWindow {
-				hasFood = true
-				break
-			}
-		}
-		if hasFood {
-			continue
-		}
-
-		var glucoseBefore *domain.GlucoseReading
-		for i := range glucoseReadings {
-			diff := dose.RecordedAt.Sub(glucoseReadings[i].RecordedAt)
-			if diff >= 0 && diff <= glucoseBeforeWindow {
-				if glucoseBefore == nil || diff < dose.RecordedAt.Sub(glucoseBefore.RecordedAt) {
-					glucoseBefore = &glucoseReadings[i]
-				}
-			}
-		}
-		if glucoseBefore == nil {
-			continue
-		}
-
-		// Select reading closest to 3h post-bolus for more consistent ISF.
-		targetElapsed := time.Duration(3 * float64(time.Hour))
-		var glucoseAfter *domain.GlucoseReading
-		var bestDist time.Duration
-		for i := range glucoseReadings {
-			elapsed := glucoseReadings[i].RecordedAt.Sub(dose.RecordedAt)
-			if elapsed >= postMin && elapsed <= postMax {
-				dist := elapsed - targetElapsed
-				if dist < 0 {
-					dist = -dist
-				}
-				if glucoseAfter == nil || dist < bestDist {
-					glucoseAfter = &glucoseReadings[i]
-					bestDist = dist
-				}
-			}
-		}
-		if glucoseAfter == nil {
-			continue
-		}
-
-		drop := glucoseBefore.ValueMmol - glucoseAfter.ValueMmol
-		if drop <= 0 {
-			continue
-		}
-
-		factors = append(factors, drop/dose.DoseUnits)
-	}
-
-	if len(factors) < MinChains {
-		return 0, fmt.Errorf("bolus.deriveISF: insufficient data (%d chains, need %d)", len(factors), MinChains)
-	}
-
-	return median(factors), nil
-}
-
-// median returns the median value of a float64 slice.
-func median(values []float64) float64 {
-	if len(values) == 0 {
-		return 0
-	}
-	sort.Float64s(values)
-	n := len(values)
-	if n%2 == 0 {
-		return (values[n/2-1] + values[n/2]) / 2
-	}
-	return values[n/2]
-}
-
 // Calculate computes a bolus recommendation for a user given current glucose and planned carbs.
 func (uc *UseCase) Calculate(ctx context.Context, userID int64, currentGlucose, carbsGrams float64, now time.Time) (*domain.BolusRecommendation, error) {
 	user, err := uc.userRepo.GetByID(ctx, userID)
@@ -240,7 +71,7 @@ func (uc *UseCase) Calculate(ctx context.Context, userID int64, currentGlucose, 
 		return nil, fmt.Errorf("bolus.Calculate: unknown drug %q", user.BolusDrug)
 	}
 
-	lookbackFrom := now.Add(-LookbackDays * 24 * time.Hour)
+	lookbackFrom := now.Add(-lookbackDays * 24 * time.Hour)
 	diaWindow := now.Add(-time.Duration(profile.DIA * float64(time.Hour)))
 
 	insulinDoses, err := uc.insulinRepo.GetByTimeRange(ctx, userID, lookbackFrom, now)
@@ -268,12 +99,12 @@ func (uc *UseCase) Calculate(ctx context.Context, userID int64, currentGlucose, 
 		doses[i] = *d
 	}
 
-	icr, err := deriveICR(foods, doses, glucoseReadings, user.TargetMinMmol, user.TargetMaxMmol)
+	icr, err := insulincalc.DeriveICR(foods, doses, glucoseReadings, user.TargetMinMmol, user.TargetMaxMmol)
 	if err != nil {
 		return nil, err
 	}
 
-	isf, err := deriveISF(foods, doses, glucoseReadings)
+	isf, err := insulincalc.DeriveISF(foods, doses, glucoseReadings)
 	if err != nil {
 		return nil, err
 	}

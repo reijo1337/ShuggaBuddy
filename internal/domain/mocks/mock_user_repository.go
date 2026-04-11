@@ -12,6 +12,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	domain "github.com/gmtantsevov/shuggabuddy/internal/domain"
 	gomock "go.uber.org/mock/gomock"
@@ -68,6 +69,63 @@ func (m *MockUserRepository) GetByID(ctx context.Context, id int64) (*domain.Use
 func (mr *MockUserRepositoryMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserRepository)(nil).GetByID), ctx, id)
+}
+
+// GetUsersForAdvisor mocks base method.
+func (m *MockUserRepository) GetUsersForAdvisor(ctx context.Context, now time.Time) ([]domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsersForAdvisor", ctx, now)
+	ret0, _ := ret[0].([]domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersForAdvisor indicates an expected call of GetUsersForAdvisor.
+func (mr *MockUserRepositoryMockRecorder) GetUsersForAdvisor(ctx, now any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersForAdvisor", reflect.TypeOf((*MockUserRepository)(nil).GetUsersForAdvisor), ctx, now)
+}
+
+// UpdateAdvisorInterval mocks base method.
+func (m *MockUserRepository) UpdateAdvisorInterval(ctx context.Context, userID int64, days int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAdvisorInterval", ctx, userID, days)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAdvisorInterval indicates an expected call of UpdateAdvisorInterval.
+func (mr *MockUserRepositoryMockRecorder) UpdateAdvisorInterval(ctx, userID, days any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAdvisorInterval", reflect.TypeOf((*MockUserRepository)(nil).UpdateAdvisorInterval), ctx, userID, days)
+}
+
+// UpdateAdvisorLastSentAt mocks base method.
+func (m *MockUserRepository) UpdateAdvisorLastSentAt(ctx context.Context, userID int64, sentAt time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAdvisorLastSentAt", ctx, userID, sentAt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAdvisorLastSentAt indicates an expected call of UpdateAdvisorLastSentAt.
+func (mr *MockUserRepositoryMockRecorder) UpdateAdvisorLastSentAt(ctx, userID, sentAt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAdvisorLastSentAt", reflect.TypeOf((*MockUserRepository)(nil).UpdateAdvisorLastSentAt), ctx, userID, sentAt)
+}
+
+// UpdateBasalDose mocks base method.
+func (m *MockUserRepository) UpdateBasalDose(ctx context.Context, userID int64, dose float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBasalDose", ctx, userID, dose)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateBasalDose indicates an expected call of UpdateBasalDose.
+func (mr *MockUserRepositoryMockRecorder) UpdateBasalDose(ctx, userID, dose any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBasalDose", reflect.TypeOf((*MockUserRepository)(nil).UpdateBasalDose), ctx, userID, dose)
 }
 
 // UpdateBolusDrug mocks base method.

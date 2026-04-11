@@ -70,6 +70,24 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 		return
 	}
 
+	// Advisor interval prefix routing.
+	if strings.HasPrefix(cb.Data, "profile:advisor_interval:") {
+		suffix := strings.TrimPrefix(cb.Data, "profile:advisor_interval:")
+		switch suffix {
+		case "3":
+			h.handleAdvisorIntervalSet(ctx, cb, 3)
+		case "7":
+			h.handleAdvisorIntervalSet(ctx, cb, 7)
+		case "14":
+			h.handleAdvisorIntervalSet(ctx, cb, 14)
+		case "off":
+			h.handleAdvisorIntervalSet(ctx, cb, 0)
+		case "custom":
+			h.handleAdvisorIntervalCustom(cb)
+		}
+		return
+	}
+
 	if strings.HasPrefix(cb.Data, "profile:bolus_drug:set:") {
 		drugKey := strings.TrimPrefix(cb.Data, "profile:bolus_drug:set:")
 		h.handleBolusDrugSet(ctx, cb, drugKey)
@@ -189,6 +207,12 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 		h.handleProfileBasalSkipTime(ctx, cb)
 	case "profile:timezone":
 		h.handleTimezoneMenu(cb)
+	case "menu:advisor":
+		h.handleAdvisorShow(ctx, cb)
+	case "profile:basal_dose":
+		h.handleProfileBasalDoseStart(cb)
+	case "profile:advisor_interval":
+		h.handleAdvisorIntervalMenu(cb)
 	}
 }
 
@@ -263,6 +287,13 @@ func (h *Handler) sendProfileView(ctx context.Context, chatID, telegramUserID in
 		bolusDrugStr = "💉 Болюсный: " + user.BolusDrug
 	}
 
+	var basalDoseStr string
+	if user.BasalDose == 0 {
+		basalDoseStr = "💉 Доза базального: не задана"
+	} else {
+		basalDoseStr = "💉 Доза базального: " + formatDoseUnits(user.BasalDose) + " ед."
+	}
+
 	tz := user.Timezone
 	if tz == "" {
 		tz = "UTC"
@@ -272,7 +303,7 @@ func (h *Handler) sendProfileView(ctx context.Context, chatID, telegramUserID in
 		acc.DisplayName,
 		label,
 		user.CreatedAt.Format("02.01.2006"),
-	) + "\n" + rangeStr + "\n" + basalStr + "\n" + bolusDrugStr + "\n" + fmt.Sprintf(h.loc.T("profile_timezone"), tz)
+	) + "\n" + rangeStr + "\n" + basalStr + "\n" + basalDoseStr + "\n" + bolusDrugStr + "\n" + fmt.Sprintf(h.loc.T("profile_timezone"), tz)
 
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -295,6 +326,12 @@ func (h *Handler) sendProfileView(ctx context.Context, chatID, telegramUserID in
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("profile_timezone_btn"), "profile:timezone"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("profile_basal_dose"), "profile:basal_dose"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("profile_advisor_interval"), "profile:advisor_interval"),
 		),
 	)
 
