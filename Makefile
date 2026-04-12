@@ -1,4 +1,4 @@
-.PHONY: run build migrate migrate-down lint fmt test
+.PHONY: run build migrate migrate-down lint fmt test test-e2e
 
 GOLANGCI_LINT_VERSION ?= v2.11.3
 GOLANGCI_LINT_DOCKER = docker run --rm \
@@ -26,3 +26,6 @@ fmt:
 
 test:
 	go test -v -race ./...
+
+test-e2e:
+	go test -v -tags e2e -count=1 ./tests/e2e/...

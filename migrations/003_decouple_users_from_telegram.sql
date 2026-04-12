@@ -36,7 +36,7 @@ ALTER TABLE external_accounts
     ADD CONSTRAINT external_accounts_user_id_fkey
     FOREIGN KEY (user_id) REFERENCES users(id);
 
-SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FROM users), 0));
+SELECT setval(pg_get_serial_sequence('users', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM users), 0), 1));
 
 -- +goose Down
 

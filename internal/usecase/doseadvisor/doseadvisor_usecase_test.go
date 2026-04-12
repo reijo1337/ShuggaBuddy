@@ -33,7 +33,7 @@ func TestAnalyzeBasal_TrendHigh(t *testing.T) {
 
 	userRepo.EXPECT().GetByID(gomock.Any(), int64(1)).Return(user, nil)
 
-	var readings []domain.GlucoseReading
+	readings := make([]domain.GlucoseReading, 0, 7)
 	for i := range 7 {
 		day := now.AddDate(0, 0, -i)
 		morning := time.Date(day.Year(), day.Month(), day.Day(), 7, 0, 0, 0, time.UTC)
