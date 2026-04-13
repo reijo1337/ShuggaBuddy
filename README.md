@@ -1,6 +1,6 @@
 # ShuggaBuddy
 
-[![Build](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/ci.yml/badge.svg)](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/ci.yml)
+[![Build](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/build.yml/badge.svg)](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/build.yml)
 [![Tests](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/test.yml/badge.svg)](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/test.yml)
 [![E2e](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/e2e.yml/badge.svg)](https://github.com/reijo1337/ShuggaBuddy/actions/workflows/e2e.yml)
 
