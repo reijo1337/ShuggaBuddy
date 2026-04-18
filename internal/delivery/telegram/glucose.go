@@ -165,7 +165,31 @@ func glucoseStatusEmoji(valueMmol, minMmol, maxMmol float64) string {
 
 func formatGlucoseRow(r domain.GlucoseReading, units domain.Units, unitsLabel string) string {
 	return "  " + r.RecordedAt.Format("02.01 15:04") + " — 🩸 " +
-		glucoseuc.FormatValue(r.ValueMmol, units) + " " + unitsLabel
+		glucoseuc.FormatValue(r.ValueMmol, units) + " " + unitsLabel + trendArrow(r.Trend)
+}
+
+func trendArrow(trend *string) string {
+	if trend == nil {
+		return ""
+	}
+	switch *trend {
+	case "DoubleUp":
+		return " ⬆⬆"
+	case "SingleUp":
+		return " ⬆"
+	case "FortyFiveUp":
+		return " ↗"
+	case "Flat":
+		return " →"
+	case "FortyFiveDown":
+		return " ↘"
+	case "SingleDown":
+		return " ⬇"
+	case "DoubleDown":
+		return " ⬇⬇"
+	default:
+		return ""
+	}
 }
 
 func formatFoodRow(e domain.FoodEntry) string {

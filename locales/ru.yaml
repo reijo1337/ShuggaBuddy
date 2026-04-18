@@ -242,5 +242,28 @@ profile_advisor_interval_custom_invalid: "Некорректное значен�
 profile_advisor_interval_saved: "✅ Автоуведомления: раз в %d дн."
 profile_advisor_interval_saved_off: "✅ Автоуведомления выключены."
 
+# CGM / Nightscout
+profile_cgm: "📡 CGM (Nightscout)"
+cgm_status_connected: "📡 CGM: подключён\nURL: %s\nПоследняя синхр.: %s"
+cgm_status_disconnected: "📡 CGM: не подключён"
+cgm_intro: "📡 *CGM (Nightscout)*\n\nNightscout — бесплатная платформа для просмотра данных с CGM-сенсора (FreeStyle Libre, Dexcom и др.).\n\n*Как подключить:*\n\n1️⃣ Установи Nightscout, если ещё нет:\n→ nightscout.github.io\n\n2️⃣ Настрой передачу данных с сенсора:\n• FreeStyle Libre → через xDrip+ или Juggluco\n• Dexcom → через Dexcom Share или xDrip+\n\n3️⃣ Найди данные для подключения:\n• URL — адрес твоего Nightscout\n• API Secret — в настройках Nightscout\n\nНажми «Подключить», когда будешь готов."
+cgm_btn_connect: "🔗 Подключить"
+cgm_btn_test: "🧪 Проверить"
+cgm_btn_disconnect: "❌ Отключить"
+cgm_btn_back: "↩️ Назад"
+cgm_url_prompt: "Введи URL Nightscout (например: https://mysite.fly.dev):"
+cgm_url_invalid: "Некорректный URL. Введи полный адрес, начинающийся с https://"
+cgm_token_prompt: "Введи API Secret (из настроек Nightscout, переменная API\\_SECRET):"
+cgm_connected: "✅ Nightscout подключён! Показания будут обновляться каждые 5 минут и появятся в дневнике."
+cgm_test_ok: "✅ Соединение работает!"
+cgm_test_fail: "❌ Не удалось подключиться. Проверь URL и токен."
+cgm_auth_fail: "❌ Ошибка авторизации. Проверь API Secret."
+cgm_disconnected: "✅ Nightscout отключён. Данные остались в дневнике."
+cgm_confirm_disconnect: "Отключить Nightscout? Данные останутся в дневнике."
+cgm_confirm_yes: "Да, отключить"
+cgm_confirm_no: "Отмена"
+cgm_no_encryption_key: "CGM-интеграция временно недоступна."
+cgm_error_unreachable: "❌ Nightscout не отвечает. Проверь URL."
+
 # Ошибки
 error_internal: "Произошла внутренняя ошибка. Попробуй позже."

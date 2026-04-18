@@ -147,7 +147,8 @@ func formatDiaryRow(entry *domain.DiaryEntry, user *domain.User, tz *time.Locati
 		}
 		valueStr := strconv.FormatFloat(entry.Glucose.ValueMmol, 'f', 1, 64)
 		indicator := glucoseStatusEmoji(entry.Glucose.ValueMmol, user.TargetMinMmol, user.TargetMaxMmol)
-		return fmt.Sprintf("%s  🩸 %s ммоль/л %s", timeStr, valueStr, indicator)
+		trend := trendArrow(entry.Glucose.Trend)
+		return fmt.Sprintf("%s  🩸 %s ммоль/л %s%s", timeStr, valueStr, indicator, trend)
 
 	case domain.DiaryKindFood:
 		if entry.Food == nil {

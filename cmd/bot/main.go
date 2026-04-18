@@ -16,6 +16,7 @@ import (
 	"github.com/gmtantsevov/shuggabuddy/internal/scheduler"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/activity"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/bolus"
+	"github.com/gmtantsevov/shuggabuddy/internal/usecase/cgm"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/diary"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/doseadvisor"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/food"
@@ -24,6 +25,7 @@ import (
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/note"
 	"github.com/gmtantsevov/shuggabuddy/internal/usecase/user"
 	"github.com/gmtantsevov/shuggabuddy/pkg/config"
+	"github.com/gmtantsevov/shuggabuddy/pkg/crypto"
 	"github.com/gmtantsevov/shuggabuddy/pkg/logger"
 )
 
@@ -103,7 +105,23 @@ func main() {
 	bolusUC := bolus.New(userRepo, insulinRepo, glucoseRepo, foodRepo)
 	advisorUC := doseadvisor.New(userRepo, insulinRepo, glucoseRepo, foodRepo)
 
-	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, insulinUC, activityUC, noteUC, diaryUC, bolusUC, advisorUC, loc, log)
+	// CGM integration (optional — requires CGM_ENCRYPTION_KEY env var).
+	var cgmUC *cgm.UseCase
+	if cfg.CGMEncryptionKey != "" {
+		encryptor, encErr := crypto.NewAESTokenEncryptor(cfg.CGMEncryptionKey)
+		if encErr != nil {
+			log.Error("invalid CGM_ENCRYPTION_KEY, CGM features disabled", zap.Error(encErr))
+		} else {
+			cgmRepo := postgres.NewCGMConnectionRepo(pool)
+			cgmUC = cgm.New(cgmRepo, glucoseRepo, encryptor)
+
+			cgmScheduler := scheduler.NewCGMSyncScheduler(cgmRepo, cgmUC, log)
+			go cgmScheduler.Run(ctx)
+			log.Info("CGM sync scheduler started")
+		}
+	}
+
+	handler := telegram.NewHandler(bot, userUC, glucoseUC, foodUC, insulinUC, activityUC, noteUC, diaryUC, bolusUC, advisorUC, cgmUC, loc, log)
 
 	messenger := &telegramMessenger{bot: bot, log: log}
 	reminderScheduler := scheduler.NewReminderScheduler(reminderRepo, activityRepo, glucoseRepo, messenger, log)

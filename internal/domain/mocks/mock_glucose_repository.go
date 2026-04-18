@@ -85,3 +85,18 @@ func (mr *MockGlucoseRepositoryMockRecorder) Save(ctx, reading any) *gomock.Call
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockGlucoseRepository)(nil).Save), ctx, reading)
 }
+
+// SaveBatch mocks base method.
+func (m *MockGlucoseRepository) SaveBatch(ctx context.Context, readings []domain.GlucoseReading) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveBatch", ctx, readings)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SaveBatch indicates an expected call of SaveBatch.
+func (mr *MockGlucoseRepositoryMockRecorder) SaveBatch(ctx, readings any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatch", reflect.TypeOf((*MockGlucoseRepository)(nil).SaveBatch), ctx, readings)
+}

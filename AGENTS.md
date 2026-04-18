@@ -51,6 +51,7 @@ make migrate-down # откатить последнюю миграцию
 | Заметки | [notes.md](docs/features/notes.md) | Самочувствие, болезнь, стресс, свободный текст |
 | Дневник | [diary.md](docs/features/diary.md) | Хронологический фид записей, навигация по дням |
 | Рекомендации по дозам | [dose-advisor.md](docs/features/dose-advisor.md) | Тренд-анализ базального/болюсного, автоуведомления |
+| CGM (Nightscout) | [cgm.md](docs/features/cgm.md) | Синхронизация CGM-данных через Nightscout, тренд-стрелки |
 
 ---
 

@@ -10,10 +10,11 @@ import (
 
 // Config содержит параметры конфигурации приложения.
 type Config struct {
-	TelegramToken string
-	DatabaseURL   string
-	LogLevel      string
-	DefaultLang   string
+	TelegramToken    string
+	DatabaseURL      string
+	LogLevel         string
+	DefaultLang      string
+	CGMEncryptionKey string
 }
 
 // Load загружает конфигурацию из .env файла и переменных окружения.
@@ -43,9 +44,10 @@ func Load() (*Config, error) {
 	}
 
 	return &Config{
-		TelegramToken: token,
-		DatabaseURL:   dbURL,
-		LogLevel:      logLevel,
-		DefaultLang:   defaultLang,
+		TelegramToken:    token,
+		DatabaseURL:      dbURL,
+		LogLevel:         logLevel,
+		DefaultLang:      defaultLang,
+		CGMEncryptionKey: os.Getenv("CGM_ENCRYPTION_KEY"),
 	}, nil
 }

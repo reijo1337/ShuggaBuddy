@@ -143,7 +143,7 @@ func newTestEnv(t *testing.T, withUser bool) *testEnv {
 	handler := telegram.NewHandler(
 		bot, userUC, glucoseUC, foodUC, insulinUC,
 		activityUC, noteUC, diaryUC, bolusUC, advisorUC,
-		loc, zap.NewNop(),
+		nil, loc, zap.NewNop(),
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -269,7 +269,7 @@ func (env *testEnv) queryFloat(query string, args ...any) float64 {
 func truncateTables(t *testing.T) {
 	t.Helper()
 	_, err := testPool.Exec(context.Background(),
-		`TRUNCATE reminders, notes, activity_entries, insulin_doses,
+		`TRUNCATE cgm_connections, reminders, notes, activity_entries, insulin_doses,
 		         food_entries, glucose_readings, external_accounts, users
 		 CASCADE`)
 	require.NoError(t, err)

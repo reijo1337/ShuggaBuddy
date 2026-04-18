@@ -20,9 +20,9 @@ func NewGlucoseRepo(pool *pgxpool.Pool) *GlucoseRepo {
 
 func (r *GlucoseRepo) Save(ctx context.Context, reading *domain.GlucoseReading) error {
 	_, err := r.pool.Exec(ctx,
-		`INSERT INTO glucose_readings (user_id, value_mmol, source)
-		 VALUES ($1, $2, $3)`,
-		reading.UserID, reading.ValueMmol, reading.Source,
+		`INSERT INTO glucose_readings (user_id, value_mmol, source, trend)
+		 VALUES ($1, $2, $3, $4)`,
+		reading.UserID, reading.ValueMmol, reading.Source, reading.Trend,
 	)
 	if err != nil {
 		return fmt.Errorf("GlucoseRepo.Save: %w", err)
@@ -31,9 +31,31 @@ func (r *GlucoseRepo) Save(ctx context.Context, reading *domain.GlucoseReading) 
 	return nil
 }
 
+func (r *GlucoseRepo) SaveBatch(ctx context.Context, readings []domain.GlucoseReading) (int, error) {
+	if len(readings) == 0 {
+		return 0, nil
+	}
+
+	inserted := 0
+	for _, rd := range readings {
+		tag, err := r.pool.Exec(ctx,
+			`INSERT INTO glucose_readings (user_id, value_mmol, source, trend, recorded_at)
+			 VALUES ($1, $2, $3, $4, $5)
+			 ON CONFLICT DO NOTHING`,
+			rd.UserID, rd.ValueMmol, rd.Source, rd.Trend, rd.RecordedAt,
+		)
+		if err != nil {
+			return inserted, fmt.Errorf("GlucoseRepo.SaveBatch: %w", err)
+		}
+		inserted += int(tag.RowsAffected())
+	}
+
+	return inserted, nil
+}
+
 func (r *GlucoseRepo) GetLast(ctx context.Context, userID int64, limit int) ([]domain.GlucoseReading, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, value_mmol, source, recorded_at
+		`SELECT id, user_id, value_mmol, source, trend, recorded_at
 		 FROM glucose_readings
 		 WHERE user_id = $1
 		 ORDER BY recorded_at DESC
@@ -48,7 +70,7 @@ func (r *GlucoseRepo) GetLast(ctx context.Context, userID int64, limit int) ([]d
 	var readings []domain.GlucoseReading
 	for rows.Next() {
 		var r domain.GlucoseReading
-		if err := rows.Scan(&r.ID, &r.UserID, &r.ValueMmol, &r.Source, &r.RecordedAt); err != nil {
+		if err := rows.Scan(&r.ID, &r.UserID, &r.ValueMmol, &r.Source, &r.Trend, &r.RecordedAt); err != nil {
 			return nil, fmt.Errorf("GlucoseRepo.GetLast: scan: %w", err)
 		}
 		readings = append(readings, r)
@@ -63,7 +85,7 @@ func (r *GlucoseRepo) GetLast(ctx context.Context, userID int64, limit int) ([]d
 
 func (r *GlucoseRepo) GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]domain.GlucoseReading, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, value_mmol, source, recorded_at
+		`SELECT id, user_id, value_mmol, source, trend, recorded_at
 		 FROM glucose_readings
 		 WHERE user_id = $1 AND recorded_at >= $2 AND recorded_at <= $3
 		 ORDER BY recorded_at ASC`,
@@ -77,7 +99,7 @@ func (r *GlucoseRepo) GetByTimeRange(ctx context.Context, userID int64, from, to
 	var readings []domain.GlucoseReading
 	for rows.Next() {
 		var rd domain.GlucoseReading
-		if err := rows.Scan(&rd.ID, &rd.UserID, &rd.ValueMmol, &rd.Source, &rd.RecordedAt); err != nil {
+		if err := rows.Scan(&rd.ID, &rd.UserID, &rd.ValueMmol, &rd.Source, &rd.Trend, &rd.RecordedAt); err != nil {
 			return nil, fmt.Errorf("GlucoseRepo.GetByTimeRange: scan: %w", err)
 		}
 		readings = append(readings, rd)

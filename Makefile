@@ -6,6 +6,8 @@ GOLANGCI_LINT_DOCKER = docker run --rm \
 	-w /app \
 	golangci/golangci-lint:$(GOLANGCI_LINT_VERSION)
 
+NUM_CPU := $(shell getconf _NPROCESSORS_ONLN)
+
 run:
 	go run ./cmd/bot/main.go
 
@@ -25,7 +27,7 @@ fmt:
 	$(GOLANGCI_LINT_DOCKER) golangci-lint fmt ./...
 
 test:
-	go test -v -race ./...
+	go test -p $(NUM_CPU) -v -race ./...
 
 test-e2e:
 	go test -v -tags e2e -count=1 ./tests/e2e/...

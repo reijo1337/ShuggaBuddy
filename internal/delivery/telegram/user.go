@@ -50,6 +50,12 @@ func (h *Handler) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery
 		h.log.Error("handleCallback: failed to answer callback", zap.Error(err))
 	}
 
+	// CGM prefix routing.
+	if cb.Data == "profile:cgm" || strings.HasPrefix(cb.Data, "cgm:") {
+		h.handleCGMCallback(ctx, cb)
+		return
+	}
+
 	// Bolus calculator prefix routing.
 	if strings.HasPrefix(cb.Data, "bolus:") {
 		switch cb.Data {
@@ -332,6 +338,9 @@ func (h *Handler) sendProfileView(ctx context.Context, chatID, telegramUserID in
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("profile_advisor_interval"), "profile:advisor_interval"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(h.loc.T("profile_cgm"), "profile:cgm"),
 		),
 	)
 

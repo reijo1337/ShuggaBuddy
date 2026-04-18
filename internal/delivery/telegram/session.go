@@ -14,6 +14,7 @@ const (
 	sessionProfile   sessionType = "profile"
 	sessionBolus     sessionType = "bolus"
 	sessionAdvisor   sessionType = "advisor"
+	sessionCGM       sessionType = "cgm"
 )
 
 // sessionStep identifies the current step within a session flow.
@@ -55,6 +56,9 @@ const (
 
 	stepProfileBasalDose // ожидание ввода дозы базального
 	stepAdvisorInterval  // ожидание ввода произвольного интервала
+
+	stepCGMURL   // ожидание ввода URL Nightscout
+	stepCGMToken // ожидание ввода API secret/token
 )
 
 // Session holds the state of an in-progress multi-step dialog for a chat.

@@ -93,3 +93,13 @@ type BolusUseCase interface {
 type DoseAdvisorUseCase interface {
 	Analyze(ctx context.Context, userID int64, now time.Time) (*domain.DoseAdvice, error)
 }
+
+//go:generate mockgen -destination=mocks/mock_cgm_usecase.go -package=tgmocks github.com/gmtantsevov/shuggabuddy/internal/delivery/telegram CGMUseCase
+
+// CGMUseCase описывает бизнес-логику CGM-интеграции.
+type CGMUseCase interface {
+	AddConnection(ctx context.Context, userID int64, baseURL, apiToken string) error
+	TestConnection(ctx context.Context, userID int64) error
+	RemoveConnection(ctx context.Context, userID int64) error
+	GetConnection(ctx context.Context, userID int64) (*domain.CGMConnection, error)
+}

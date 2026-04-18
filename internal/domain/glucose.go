@@ -11,6 +11,7 @@ type GlucoseReading struct {
 	UserID     int64     `json:"user_id"`
 	ValueMmol  float64   `json:"value_mmol"`
 	Source     string    `json:"source"`
+	Trend      *string   `json:"trend,omitempty"`
 	RecordedAt time.Time `json:"recorded_at"`
 }
 
@@ -18,6 +19,7 @@ type GlucoseReading struct {
 
 type GlucoseRepository interface {
 	Save(ctx context.Context, reading *GlucoseReading) error
+	SaveBatch(ctx context.Context, readings []GlucoseReading) (int, error)
 	GetLast(ctx context.Context, userID int64, limit int) ([]GlucoseReading, error)
 	GetByTimeRange(ctx context.Context, userID int64, from, to time.Time) ([]GlucoseReading, error)
 }

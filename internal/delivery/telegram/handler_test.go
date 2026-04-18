@@ -64,7 +64,7 @@ func newTestHandler(
 	advisorUC telegram.DoseAdvisorUseCase,
 	loc *i18n.Localizer,
 ) *telegram.Handler {
-	return telegram.NewHandler(bot, userUC, glucUC, foodUC, insulinUC, activityUC, noteUC, diaryUC, bolusUC, advisorUC, loc, zap.NewNop())
+	return telegram.NewHandler(bot, userUC, glucUC, foodUC, insulinUC, activityUC, noteUC, diaryUC, bolusUC, advisorUC, nil, loc, zap.NewNop())
 }
 
 func testMessage(userID, chatID int64, text string) *tgbotapi.Message {
