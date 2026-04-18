@@ -106,16 +106,17 @@ func main() {
 	advisorUC := doseadvisor.New(userRepo, insulinRepo, glucoseRepo, foodRepo)
 
 	// CGM integration (optional — requires CGM_ENCRYPTION_KEY env var).
-	var cgmUC *cgm.UseCase
+	var cgmUC telegram.CGMUseCase
 	if cfg.CGMEncryptionKey != "" {
 		encryptor, encErr := crypto.NewAESTokenEncryptor(cfg.CGMEncryptionKey)
 		if encErr != nil {
 			log.Error("invalid CGM_ENCRYPTION_KEY, CGM features disabled", zap.Error(encErr))
 		} else {
 			cgmRepo := postgres.NewCGMConnectionRepo(pool)
-			cgmUC = cgm.New(cgmRepo, glucoseRepo, encryptor)
+			uc := cgm.New(cgmRepo, glucoseRepo, encryptor)
+			cgmUC = uc
 
-			cgmScheduler := scheduler.NewCGMSyncScheduler(cgmRepo, cgmUC, log)
+			cgmScheduler := scheduler.NewCGMSyncScheduler(cgmRepo, uc, log)
 			go cgmScheduler.Run(ctx)
 			log.Info("CGM sync scheduler started")
 		}
