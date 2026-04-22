@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gmtantsevov/shuggabuddy/internal/domain"
+	"github.com/gmtantsevov/shuggabuddy/pkg/librelinkup"
 	"github.com/gmtantsevov/shuggabuddy/pkg/nightscout"
 )
 
@@ -29,27 +31,80 @@ func New(cgmRepo domain.CGMConnectionRepository, glucoseRepo domain.GlucoseRepos
 	}
 }
 
-func (uc *UseCase) AddConnection(ctx context.Context, userID int64, baseURL, apiToken string) error {
-	if err := validateURL(baseURL); err != nil {
-		return err
+func (uc *UseCase) buildClient(conn *domain.CGMConnection, decryptedToken string) domain.CGMClient {
+	switch conn.Provider {
+	case domain.CGMProviderNightscout:
+		return nightscout.NewClient(conn.BaseURL, decryptedToken, conn.UserID)
+	case domain.CGMProviderLibreLinkUp:
+		region := ""
+		if conn.Region != nil {
+			region = *conn.Region
+		}
+		return librelinkup.NewClient(conn.BaseURL, decryptedToken, region, conn.UserID)
+	default:
+		return nil
 	}
+}
 
-	client := nightscout.NewClient(baseURL, apiToken)
-	if err := client.VerifyConnection(ctx); err != nil {
-		return err
-	}
+func (uc *UseCase) AddConnection(ctx context.Context, userID int64, provider domain.CGMProvider, credential1, credential2 string) error {
+	var conn *domain.CGMConnection
 
-	encrypted, err := uc.encryptor.Encrypt(apiToken)
-	if err != nil {
-		return fmt.Errorf("cgm.AddConnection: encrypt: %w", err)
-	}
+	switch provider {
+	case domain.CGMProviderNightscout:
+		if err := validateURL(credential1); err != nil {
+			return err
+		}
 
-	conn := &domain.CGMConnection{
-		UserID:   userID,
-		Provider: domain.CGMProviderNightscout,
-		BaseURL:  baseURL,
-		APIToken: encrypted,
-		Active:   true,
+		client := nightscout.NewClient(credential1, credential2, userID)
+		if err := client.VerifyConnection(ctx); err != nil {
+			return err
+		}
+
+		encrypted, err := uc.encryptor.Encrypt(credential2)
+		if err != nil {
+			return fmt.Errorf("cgm.AddConnection: encrypt: %w", err)
+		}
+
+		conn = &domain.CGMConnection{
+			UserID:   userID,
+			Provider: domain.CGMProviderNightscout,
+			BaseURL:  credential1,
+			APIToken: encrypted,
+			Active:   true,
+		}
+
+	case domain.CGMProviderLibreLinkUp:
+		if err := validateEmail(credential1); err != nil {
+			return err
+		}
+
+		client := librelinkup.NewClient(credential1, credential2, "", userID)
+		if err := client.VerifyConnection(ctx); err != nil {
+			return err
+		}
+
+		encrypted, err := uc.encryptor.Encrypt(credential2)
+		if err != nil {
+			return fmt.Errorf("cgm.AddConnection: encrypt: %w", err)
+		}
+
+		region := client.DetectedRegion()
+		var regionPtr *string
+		if region != "" {
+			regionPtr = &region
+		}
+
+		conn = &domain.CGMConnection{
+			UserID:   userID,
+			Provider: domain.CGMProviderLibreLinkUp,
+			BaseURL:  credential1,
+			APIToken: encrypted,
+			Region:   regionPtr,
+			Active:   true,
+		}
+
+	default:
+		return fmt.Errorf("cgm.AddConnection: unsupported provider %s", provider)
 	}
 
 	if err := uc.cgmRepo.Upsert(ctx, conn); err != nil {
@@ -73,7 +128,10 @@ func (uc *UseCase) TestConnection(ctx context.Context, userID int64) error {
 		return fmt.Errorf("cgm.TestConnection: decrypt: %w", err)
 	}
 
-	client := nightscout.NewClient(conn.BaseURL, token)
+	client := uc.buildClient(conn, token)
+	if client == nil {
+		return fmt.Errorf("cgm.TestConnection: unknown provider %s", conn.Provider)
+	}
 	return client.VerifyConnection(ctx)
 }
 
@@ -106,37 +164,30 @@ func (uc *UseCase) SyncUser(ctx context.Context, conn *domain.CGMConnection) err
 		return fmt.Errorf("cgm.SyncUser: decrypt: %w", err)
 	}
 
-	client := nightscout.NewClient(conn.BaseURL, token)
+	client := uc.buildClient(conn, token)
+	if client == nil {
+		return fmt.Errorf("cgm.SyncUser: unknown provider %s", conn.Provider)
+	}
 
 	since := time.Now().UTC().Add(-24 * time.Hour)
 	if conn.LastSyncedAt != nil {
 		since = conn.LastSyncedAt.Add(-5 * time.Minute)
 	}
 
-	entries, err := client.GetEntries(ctx, since, 288)
+	readings, err := client.GetEntries(ctx, since, 288)
 	if err != nil {
 		return fmt.Errorf("cgm.SyncUser: %w", err)
 	}
 
-	if len(entries) == 0 {
+	if len(readings) == 0 {
 		return nil
 	}
 
-	var readings []domain.GlucoseReading
 	var latest time.Time
-	for _, e := range entries {
-		if e.SGV <= 0 {
-			continue
-		}
-		r := e.ToGlucoseReading(conn.UserID)
-		readings = append(readings, r)
+	for _, r := range readings {
 		if r.RecordedAt.After(latest) {
 			latest = r.RecordedAt
 		}
-	}
-
-	if len(readings) == 0 {
-		return nil
 	}
 
 	if _, err := uc.glucoseRepo.SaveBatch(ctx, readings); err != nil {
@@ -171,6 +222,16 @@ func validateURL(rawURL string) error {
 		return fmt.Errorf("cgm: HTTPS is required (got %s)", u.Scheme)
 	}
 
+	return nil
+}
+
+func validateEmail(email string) error {
+	if len(email) > 254 {
+		return fmt.Errorf("cgm: email too long")
+	}
+	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		return fmt.Errorf("cgm: invalid email format")
+	}
 	return nil
 }
 

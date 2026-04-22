@@ -51,7 +51,7 @@ make migrate-down # откатить последнюю миграцию
 | Заметки | [notes.md](docs/features/notes.md) | Самочувствие, болезнь, стресс, свободный текст |
 | Дневник | [diary.md](docs/features/diary.md) | Хронологический фид записей, навигация по дням |
 | Рекомендации по дозам | [dose-advisor.md](docs/features/dose-advisor.md) | Тренд-анализ базального/болюсного, автоуведомления |
-| CGM (Nightscout) | [cgm.md](docs/features/cgm.md) | Синхронизация CGM-данных через Nightscout, тренд-стрелки |
+| CGM (Nightscout / LibreLinkUp) | [cgm.md](docs/features/cgm.md) | Синхронизация CGM-данных через Nightscout или LibreLinkUp, тренд-стрелки |
 
 ---
 
@@ -160,6 +160,12 @@ delivery → usecase → domain ← repository
 ## Workflows
 
 **Важно**: При любых задачах не нужно ничего коммитить.
+
+После любых реализаций убедись в том что:
+
+1. Код отформатирован (`make fmt`)
+2. Линтинг проходит (`make lint`)
+3. Тесты проходят (`make test` и `make test-e2e`)
 
 ### New Bot Action (inline-кнопка)
 

@@ -98,7 +98,7 @@ type DoseAdvisorUseCase interface {
 
 // CGMUseCase описывает бизнес-логику CGM-интеграции.
 type CGMUseCase interface {
-	AddConnection(ctx context.Context, userID int64, baseURL, apiToken string) error
+	AddConnection(ctx context.Context, userID int64, provider domain.CGMProvider, credential1, credential2 string) error
 	TestConnection(ctx context.Context, userID int64) error
 	RemoveConnection(ctx context.Context, userID int64) error
 	GetConnection(ctx context.Context, userID int64) (*domain.CGMConnection, error)

@@ -42,17 +42,17 @@ func (m *MockCGMUseCase) EXPECT() *MockCGMUseCaseMockRecorder {
 }
 
 // AddConnection mocks base method.
-func (m *MockCGMUseCase) AddConnection(ctx context.Context, userID int64, baseURL, apiToken string) error {
+func (m *MockCGMUseCase) AddConnection(ctx context.Context, userID int64, provider domain.CGMProvider, credential1, credential2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddConnection", ctx, userID, baseURL, apiToken)
+	ret := m.ctrl.Call(m, "AddConnection", ctx, userID, provider, credential1, credential2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddConnection indicates an expected call of AddConnection.
-func (mr *MockCGMUseCaseMockRecorder) AddConnection(ctx, userID, baseURL, apiToken any) *gomock.Call {
+func (mr *MockCGMUseCaseMockRecorder) AddConnection(ctx, userID, provider, credential1, credential2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddConnection", reflect.TypeOf((*MockCGMUseCase)(nil).AddConnection), ctx, userID, baseURL, apiToken)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddConnection", reflect.TypeOf((*MockCGMUseCase)(nil).AddConnection), ctx, userID, provider, credential1, credential2)
 }
 
 // GetConnection mocks base method.

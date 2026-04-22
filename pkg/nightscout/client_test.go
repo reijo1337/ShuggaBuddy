@@ -27,12 +27,38 @@ func TestGetEntriesSuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(srv.URL, "test-secret")
+	c := NewClient(srv.URL, "test-secret", 42)
 	result, err := c.GetEntries(context.Background(), time.Time{}, 288)
 	require.NoError(t, err)
 	assert.Len(t, result, 2)
-	assert.Equal(t, 120, result[0].SGV)
-	assert.Equal(t, "SingleUp", result[1].Direction)
+	assert.Equal(t, int64(42), result[0].UserID)
+	assert.InDelta(t, 120.0/MgdlToMmol, result[0].ValueMmol, 0.01)
+	assert.Equal(t, "nightscout", result[0].Source)
+	require.NotNil(t, result[0].Trend)
+	assert.Equal(t, "Flat", *result[0].Trend)
+	assert.Equal(t, int64(42), result[1].UserID)
+	require.NotNil(t, result[1].Trend)
+	assert.Equal(t, "SingleUp", *result[1].Trend)
+}
+
+func TestGetEntriesFiltersSGVZero(t *testing.T) {
+	entries := []Entry{
+		{ID: "1", SGV: 120, Direction: "Flat", DateMs: time.Date(2026, 4, 18, 12, 0, 0, 0, time.UTC).UnixMilli(), Type: "sgv"},
+		{ID: "2", SGV: 0, Direction: "Flat", DateMs: time.Date(2026, 4, 18, 12, 5, 0, 0, time.UTC).UnixMilli(), Type: "sgv"},
+		{ID: "3", SGV: -1, Direction: "Flat", DateMs: time.Date(2026, 4, 18, 12, 10, 0, 0, time.UTC).UnixMilli(), Type: "sgv"},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(entries)
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL, "test-secret", 1)
+	result, err := c.GetEntries(context.Background(), time.Time{}, 10)
+	require.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.InDelta(t, 120.0/MgdlToMmol, result[0].ValueMmol, 0.01)
 }
 
 func TestGetEntriesAuthSecret(t *testing.T) {
@@ -45,7 +71,7 @@ func TestGetEntriesAuthSecret(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(srv.URL, "myapisecret")
+	c := NewClient(srv.URL, "myapisecret", 1)
 	_, err := c.GetEntries(context.Background(), time.Time{}, 10)
 	require.NoError(t, err)
 }
@@ -60,7 +86,7 @@ func TestGetEntriesAuthToken(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(srv.URL, "reader-abc123def")
+	c := NewClient(srv.URL, "reader-abc123def", 1)
 	_, err := c.GetEntries(context.Background(), time.Time{}, 10)
 	require.NoError(t, err)
 }
@@ -71,7 +97,7 @@ func TestGetEntriesUnauthorized(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(srv.URL, "bad-secret")
+	c := NewClient(srv.URL, "bad-secret", 1)
 	_, err := c.GetEntries(context.Background(), time.Time{}, 10)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnauthorized)
@@ -85,7 +111,7 @@ func TestVerifyConnectionSuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(srv.URL, "test-secret")
+	c := NewClient(srv.URL, "test-secret", 1)
 	err := c.VerifyConnection(context.Background())
 	assert.NoError(t, err)
 }
@@ -96,7 +122,7 @@ func TestVerifyConnectionNotFound(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(srv.URL, "test-secret")
+	c := NewClient(srv.URL, "test-secret", 1)
 	err := c.VerifyConnection(context.Background())
 	assert.ErrorIs(t, err, ErrNotFound)
 }

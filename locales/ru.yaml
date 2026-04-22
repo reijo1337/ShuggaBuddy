@@ -243,8 +243,8 @@ profile_advisor_interval_saved: "✅ Автоуведомления: раз в %
 profile_advisor_interval_saved_off: "✅ Автоуведомления выключены."
 
 # CGM / Nightscout
-profile_cgm: "📡 CGM (Nightscout)"
-cgm_status_connected: "📡 CGM: подключён\nURL: %s\nПоследняя синхр.: %s"
+profile_cgm: "📡 CGM"
+cgm_status_connected: "📡 CGM: %s ✅\nURL: %s\nПоследняя синхр.: %s"
 cgm_status_disconnected: "📡 CGM: не подключён"
 cgm_intro: "📡 *CGM (Nightscout)*\n\nNightscout — бесплатная платформа для просмотра данных с CGM-сенсора (FreeStyle Libre, Dexcom и др.).\n\n*Как подключить:*\n\n1️⃣ Установи Nightscout, если ещё нет:\n→ nightscout.github.io\n\n2️⃣ Настрой передачу данных с сенсора:\n• FreeStyle Libre → через xDrip+ или Juggluco\n• Dexcom → через Dexcom Share или xDrip+\n\n3️⃣ Найди данные для подключения:\n• URL — адрес твоего Nightscout\n• API Secret — в настройках Nightscout\n\nНажми «Подключить», когда будешь готов."
 cgm_btn_connect: "🔗 Подключить"
@@ -258,12 +258,26 @@ cgm_connected: "✅ Nightscout подключён! Показания будут
 cgm_test_ok: "✅ Соединение работает!"
 cgm_test_fail: "❌ Не удалось подключиться. Проверь URL и токен."
 cgm_auth_fail: "❌ Ошибка авторизации. Проверь API Secret."
-cgm_disconnected: "✅ Nightscout отключён. Данные остались в дневнике."
-cgm_confirm_disconnect: "Отключить Nightscout? Данные останутся в дневнике."
+cgm_disconnected: "✅ CGM отключён. Данные остались в дневнике."
+cgm_confirm_disconnect: "Отключить CGM? Данные останутся в дневнике."
 cgm_confirm_yes: "Да, отключить"
 cgm_confirm_no: "Отмена"
 cgm_no_encryption_key: "CGM-интеграция временно недоступна."
 cgm_error_unreachable: "❌ Nightscout не отвечает. Проверь URL."
+
+# CGM — Provider selection
+cgm_choose_provider: "📡 CGM\n\nПодключи сенсор для автоматической записи показаний."
+cgm_btn_nightscout: "🌙 Nightscout"
+cgm_btn_librelinkup: "📱 LibreLinkUp"
+
+# CGM — LibreLinkUp
+cgm_llu_intro: "📱 LibreLinkUp\n\nАвтоматическая синхронизация с FreeStyle Libre через LibreView.\n\nДля подключения нужен аккаунт LibreView и настроенная передача данных через LibreLinkUp.\n\n⚠️ Бот сохранит зашифрованные учётные данные для автоматической синхронизации."
+cgm_llu_email_prompt: "Введи email от аккаунта LibreView:"
+cgm_llu_email_invalid: "Некорректный email. Введи email от аккаунта LibreView."
+cgm_llu_password_prompt: "Введи пароль от аккаунта LibreView:"
+cgm_llu_connected: "✅ LibreLinkUp подключён! Показания будут обновляться каждые 5 минут и появятся в дневнике."
+cgm_llu_auth_fail: "❌ Ошибка авторизации. Проверь email и пароль от LibreView."
+cgm_llu_no_patients: "❌ В аккаунте LibreView не найдены подключённые пациенты. Настрой передачу данных в приложении LibreLinkUp."
 
 # Ошибки
 error_internal: "Произошла внутренняя ошибка. Попробуй позже."

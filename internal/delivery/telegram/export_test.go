@@ -72,6 +72,12 @@ const (
 
 	StepProfileBasalDose = stepProfileBasalDose
 	StepAdvisorInterval  = stepAdvisorInterval
+
+	SessionCGM      = sessionCGM
+	StepCGMURL      = stepCGMURL
+	StepCGMToken    = stepCGMToken
+	StepLLUEmail    = stepLLUEmail
+	StepLLUPassword = stepLLUPassword
 )
 
 // SetSession stores a session directly for use in tests.

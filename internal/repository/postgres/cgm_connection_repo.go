@@ -22,15 +22,16 @@ func NewCGMConnectionRepo(pool *pgxpool.Pool) *CGMConnectionRepo {
 
 func (r *CGMConnectionRepo) Upsert(ctx context.Context, conn *domain.CGMConnection) error {
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO cgm_connections (user_id, provider, base_url, api_token, active)
-		 VALUES ($1, $2, $3, $4, TRUE)
+		`INSERT INTO cgm_connections (user_id, provider, base_url, api_token, region, active)
+		 VALUES ($1, $2, $3, $4, $5, TRUE)
 		 ON CONFLICT (user_id, provider) DO UPDATE
 		 SET base_url = EXCLUDED.base_url,
 		     api_token = EXCLUDED.api_token,
+		     region = EXCLUDED.region,
 		     active = TRUE,
 		     last_synced_at = NULL
 		 RETURNING id, created_at`,
-		conn.UserID, conn.Provider, conn.BaseURL, conn.APIToken,
+		conn.UserID, conn.Provider, conn.BaseURL, conn.APIToken, conn.Region,
 	).Scan(&conn.ID, &conn.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("CGMConnectionRepo.Upsert: %w", err)
@@ -41,12 +42,12 @@ func (r *CGMConnectionRepo) Upsert(ctx context.Context, conn *domain.CGMConnecti
 func (r *CGMConnectionRepo) GetByUserID(ctx context.Context, userID int64) (*domain.CGMConnection, error) {
 	conn := &domain.CGMConnection{}
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, user_id, provider, base_url, api_token, last_synced_at, active, created_at
+		`SELECT id, user_id, provider, base_url, api_token, region, last_synced_at, active, created_at
 		 FROM cgm_connections
 		 WHERE user_id = $1`,
 		userID,
 	).Scan(&conn.ID, &conn.UserID, &conn.Provider, &conn.BaseURL, &conn.APIToken,
-		&conn.LastSyncedAt, &conn.Active, &conn.CreatedAt)
+		&conn.Region, &conn.LastSyncedAt, &conn.Active, &conn.CreatedAt)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -59,7 +60,7 @@ func (r *CGMConnectionRepo) GetByUserID(ctx context.Context, userID int64) (*dom
 
 func (r *CGMConnectionRepo) GetAllActive(ctx context.Context) ([]domain.CGMConnection, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, provider, base_url, api_token, last_synced_at, active, created_at
+		`SELECT id, user_id, provider, base_url, api_token, region, last_synced_at, active, created_at
 		 FROM cgm_connections
 		 WHERE active = TRUE`)
 	if err != nil {
@@ -71,7 +72,7 @@ func (r *CGMConnectionRepo) GetAllActive(ctx context.Context) ([]domain.CGMConne
 	for rows.Next() {
 		var c domain.CGMConnection
 		if err := rows.Scan(&c.ID, &c.UserID, &c.Provider, &c.BaseURL, &c.APIToken,
-			&c.LastSyncedAt, &c.Active, &c.CreatedAt); err != nil {
+			&c.Region, &c.LastSyncedAt, &c.Active, &c.CreatedAt); err != nil {
 			return nil, fmt.Errorf("CGMConnectionRepo.GetAllActive: scan: %w", err)
 		}
 		conns = append(conns, c)

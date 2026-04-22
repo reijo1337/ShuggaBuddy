@@ -59,6 +59,9 @@ const (
 
 	stepCGMURL   // ожидание ввода URL Nightscout
 	stepCGMToken // ожидание ввода API secret/token
+
+	stepLLUEmail    // ожидание ввода email LibreView
+	stepLLUPassword // ожидание ввода пароля LibreView
 )
 
 // Session holds the state of an in-progress multi-step dialog for a chat.

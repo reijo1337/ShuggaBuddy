@@ -7,7 +7,10 @@ import (
 
 type CGMProvider string
 
-const CGMProviderNightscout CGMProvider = "nightscout"
+const (
+	CGMProviderNightscout  CGMProvider = "nightscout"
+	CGMProviderLibreLinkUp CGMProvider = "librelinkup"
+)
 
 type CGMConnection struct {
 	ID           int64       `json:"id"`
@@ -15,12 +18,20 @@ type CGMConnection struct {
 	Provider     CGMProvider `json:"provider"`
 	BaseURL      string      `json:"base_url"`
 	APIToken     string      `json:"api_token"`
+	Region       *string     `json:"region,omitempty"`
 	LastSyncedAt *time.Time  `json:"last_synced_at"`
 	Active       bool        `json:"active"`
 	CreatedAt    time.Time   `json:"created_at"`
 }
 
 //go:generate mockgen -destination=mocks/mock_cgm_repository.go -package=mocks . CGMConnectionRepository
+
+//go:generate mockgen -destination=mocks/mock_cgm_client.go -package=mocks . CGMClient
+
+type CGMClient interface {
+	VerifyConnection(ctx context.Context) error
+	GetEntries(ctx context.Context, since time.Time, count int) ([]GlucoseReading, error)
+}
 
 type CGMConnectionRepository interface {
 	Upsert(ctx context.Context, conn *CGMConnection) error

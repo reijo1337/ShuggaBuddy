@@ -53,13 +53,15 @@ func NormalizeTrend(direction string) *string {
 type Client struct {
 	baseURL    string
 	apiSecret  string
+	userID     int64
 	httpClient *http.Client
 }
 
-func NewClient(baseURL, apiSecret string) *Client {
+func NewClient(baseURL, apiSecret string, userID int64) *Client {
 	return &Client{
 		baseURL:   strings.TrimRight(baseURL, "/"),
 		apiSecret: apiSecret,
+		userID:    userID,
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
@@ -70,7 +72,7 @@ func (c *Client) isToken() bool {
 	return strings.Contains(c.apiSecret, "-")
 }
 
-func (c *Client) GetEntries(ctx context.Context, since time.Time, count int) ([]Entry, error) {
+func (c *Client) GetEntries(ctx context.Context, since time.Time, count int) ([]domain.GlucoseReading, error) {
 	url := fmt.Sprintf("%s/api/v1/entries.json?find[type]=sgv&count=%d", c.baseURL, count)
 
 	if !since.IsZero() {
@@ -106,7 +108,15 @@ func (c *Client) GetEntries(ctx context.Context, since time.Time, count int) ([]
 		return nil, fmt.Errorf("nightscout.GetEntries: decode: %w", err)
 	}
 
-	return entries, nil
+	readings := make([]domain.GlucoseReading, 0, len(entries))
+	for _, e := range entries {
+		if e.SGV <= 0 {
+			continue
+		}
+		readings = append(readings, e.ToGlucoseReading(c.userID))
+	}
+
+	return readings, nil
 }
 
 func (c *Client) VerifyConnection(ctx context.Context) error {
