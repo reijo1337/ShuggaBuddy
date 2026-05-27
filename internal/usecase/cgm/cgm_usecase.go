@@ -21,14 +21,35 @@ type UseCase struct {
 	cgmRepo     domain.CGMConnectionRepository
 	glucoseRepo domain.GlucoseRepository
 	encryptor   TokenEncryptor
+	lluBaseURL  string
 }
 
-func New(cgmRepo domain.CGMConnectionRepository, glucoseRepo domain.GlucoseRepository, encryptor TokenEncryptor) *UseCase {
-	return &UseCase{
+// Option configures a UseCase.
+type Option func(*UseCase)
+
+// WithLibreLinkUpBaseURL overrides the LibreLinkUp API base URL.
+// Intended for tests that point the client at a mock server.
+func WithLibreLinkUpBaseURL(baseURL string) Option {
+	return func(uc *UseCase) { uc.lluBaseURL = baseURL }
+}
+
+func New(cgmRepo domain.CGMConnectionRepository, glucoseRepo domain.GlucoseRepository, encryptor TokenEncryptor, opts ...Option) *UseCase {
+	uc := &UseCase{
 		cgmRepo:     cgmRepo,
 		glucoseRepo: glucoseRepo,
 		encryptor:   encryptor,
 	}
+	for _, opt := range opts {
+		opt(uc)
+	}
+	return uc
+}
+
+func (uc *UseCase) libreLinkUpOpts() []librelinkup.Option {
+	if uc.lluBaseURL == "" {
+		return nil
+	}
+	return []librelinkup.Option{librelinkup.WithBaseURL(uc.lluBaseURL)}
 }
 
 func (uc *UseCase) buildClient(conn *domain.CGMConnection, decryptedToken string) domain.CGMClient {
@@ -40,7 +61,7 @@ func (uc *UseCase) buildClient(conn *domain.CGMConnection, decryptedToken string
 		if conn.Region != nil {
 			region = *conn.Region
 		}
-		return librelinkup.NewClient(conn.BaseURL, decryptedToken, region, conn.UserID)
+		return librelinkup.NewClient(conn.BaseURL, decryptedToken, region, conn.UserID, uc.libreLinkUpOpts()...)
 	default:
 		return nil
 	}
@@ -78,7 +99,7 @@ func (uc *UseCase) AddConnection(ctx context.Context, userID int64, provider dom
 			return err
 		}
 
-		client := librelinkup.NewClient(credential1, credential2, "", userID)
+		client := librelinkup.NewClient(credential1, credential2, "", userID, uc.libreLinkUpOpts()...)
 		if err := client.VerifyConnection(ctx); err != nil {
 			return err
 		}

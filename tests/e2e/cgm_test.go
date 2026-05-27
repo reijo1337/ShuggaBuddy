@@ -320,7 +320,7 @@ func TestCGMLibreLinkUpConnectAndSync(t *testing.T) {
 
 	glucoseRepo := postgresrepo.NewGlucoseRepo(testPool)
 	cgmRepo := postgresrepo.NewCGMConnectionRepo(testPool)
-	cgmUC := cgm.New(cgmRepo, glucoseRepo, &stubEncryptor{})
+	cgmUC := cgm.New(cgmRepo, glucoseRepo, &stubEncryptor{}, cgm.WithLibreLinkUpBaseURL(srv.URL))
 
 	env := newTestEnvWithCGM(t, cgmUC)
 
@@ -347,47 +347,39 @@ func TestCGMLibreLinkUpConnectAndSync(t *testing.T) {
 	msg = env.bot.lastMessageText()
 	assert.Contains(t, msg, "пароль")
 
-	// 5. Enter password — AddConnection calls the mock server.
-	// Override the librelinkup base URL via the usecase by calling AddConnection directly
-	// since the real client would hit api.libreview.io.
-	// Instead, we test the UI flow up to the point where AddConnection is called,
-	// and separately test sync via the usecase with a mock server.
-
-	// For the UI flow test, entering the password will fail because the real
-	// LibreLinkUp API can't be reached. We verify the flow reaches the connection attempt.
+	// 5. Enter password — AddConnection hits the mock server and succeeds.
 	env.bot.reset()
 	env.sendText("testpassword")
 	msg = env.bot.lastMessageText()
-	// Should show an error (real LibreLinkUp API rejects fake credentials) — that's expected.
-	// The important thing is the flow reached the connection attempt, not the email prompt.
-	assert.NotContains(t, msg, "Введи email")
-	assert.NotContains(t, msg, "Введи пароль")
+	assert.Contains(t, msg, "подключён")
 
-	// 6. Test sync directly via usecase with mock server.
-	// Manually insert a LibreLinkUp connection pointing to our mock server.
-	_, err := testPool.Exec(context.Background(),
-		`INSERT INTO cgm_connections (user_id, provider, base_url, api_token, active)
-		 VALUES ($1, 'librelinkup', $2, $3, TRUE)`,
-		env.userID, "enc:test@example.com", "enc:testpassword",
-	)
-	require.NoError(t, err)
-
+	// Verify the connection was saved by the flow.
 	conn, err := cgmRepo.GetByUserID(context.Background(), env.userID)
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 	assert.Equal(t, "librelinkup", string(conn.Provider))
 
-	// Create a usecase with a client that points to our mock server.
-	// We test SyncUser by temporarily overriding the connection's base_url.
-	// Since the librelinkup client uses base_url as email and the real API URL
-	// is hardcoded, we verify the data layer instead.
-
-	// Verify the connection exists in DB.
 	cnt := env.queryInt(
 		`SELECT count(*) FROM cgm_connections WHERE user_id = $1 AND provider = 'librelinkup' AND active = TRUE`,
 		env.userID,
 	)
 	assert.Equal(t, int64(1), cnt)
+
+	// 6. Trigger sync via usecase against the mock server.
+	err = cgmUC.SyncUser(context.Background(), conn)
+	require.NoError(t, err)
+
+	glucoseCnt := env.queryInt(
+		`SELECT count(*) FROM glucose_readings WHERE user_id = $1 AND source = 'librelinkup'`,
+		env.userID,
+	)
+	assert.Equal(t, int64(2), glucoseCnt)
+
+	trendCnt := env.queryInt(
+		`SELECT count(*) FROM glucose_readings WHERE user_id = $1 AND trend IS NOT NULL`,
+		env.userID,
+	)
+	assert.Equal(t, int64(2), trendCnt)
 
 	// 7. Disconnect LibreLinkUp.
 	env.bot.reset()
@@ -410,9 +402,20 @@ func TestCGMLibreLinkUpConnectAndSync(t *testing.T) {
 }
 
 func TestCGMLibreLinkUpAuthFailure(t *testing.T) {
+	// Mock LibreLinkUp API rejecting the credentials (status 2 = unauthorized).
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/llu/auth/login" {
+			json.NewEncoder(w).Encode(map[string]any{"status": 2})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
 	glucoseRepo := postgresrepo.NewGlucoseRepo(testPool)
 	cgmRepo := postgresrepo.NewCGMConnectionRepo(testPool)
-	cgmUC := cgm.New(cgmRepo, glucoseRepo, &stubEncryptor{})
+	cgmUC := cgm.New(cgmRepo, glucoseRepo, &stubEncryptor{}, cgm.WithLibreLinkUpBaseURL(srv.URL))
 
 	env := newTestEnvWithCGM(t, cgmUC)
 
@@ -424,9 +427,9 @@ func TestCGMLibreLinkUpAuthFailure(t *testing.T) {
 	env.bot.reset()
 	env.sendText("wrongpassword")
 
-	// Should show an error — can't connect to real LibreLinkUp.
+	// Should show an auth error from the mock.
 	msg := env.bot.lastMessageText()
-	assert.NotEmpty(t, msg)
+	assert.Contains(t, msg, "авторизации")
 
 	// No connection should be saved.
 	cnt := env.queryInt(

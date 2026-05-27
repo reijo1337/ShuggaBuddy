@@ -45,18 +45,28 @@ var (
 )
 
 type Client struct {
-	email      string
-	password   string
-	region     string
-	userID     int64
-	authToken  string
-	accountID  string
-	patientID  string
-	baseURL    string
-	httpClient *http.Client
+	email           string
+	password        string
+	region          string
+	userID          int64
+	authToken       string
+	accountID       string
+	patientID       string
+	baseURL         string
+	baseURLOverride string
+	httpClient      *http.Client
 }
 
-func NewClient(email, password, region string, userID int64) *Client {
+// Option configures a Client.
+type Option func(*Client)
+
+// WithBaseURL forces the client to use the given base URL regardless of region.
+// Intended for tests that point the client at a mock server.
+func WithBaseURL(url string) Option {
+	return func(c *Client) { c.baseURLOverride = url }
+}
+
+func NewClient(email, password, region string, userID int64, opts ...Option) *Client {
 	jar, _ := cookiejar.New(nil)
 
 	// Reorder TLS cipher suites to avoid bot detection by JA3 fingerprint.
@@ -69,12 +79,11 @@ func NewClient(email, password, region string, userID int64) *Client {
 		cipherIDs[1], cipherIDs[2] = cipherIDs[2], cipherIDs[1]
 	}
 
-	return &Client{
+	c := &Client{
 		email:    email,
 		password: password,
 		region:   region,
 		userID:   userID,
-		baseURL:  resolveBaseURL(region),
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 			Jar:     jar,
@@ -85,9 +94,17 @@ func NewClient(email, password, region string, userID int64) *Client {
 			},
 		},
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	c.baseURL = c.resolveBaseURL(region)
+	return c
 }
 
-func resolveBaseURL(region string) string {
+func (c *Client) resolveBaseURL(region string) string {
+	if c.baseURLOverride != "" {
+		return c.baseURLOverride
+	}
 	if region == "" {
 		return defaultBaseURL
 	}
@@ -107,7 +124,7 @@ func (c *Client) VerifyConnection(ctx context.Context) error {
 		// If no region was set and login failed, try RU endpoint as fallback.
 		if c.region == "" && errors.Is(err, ErrUnauthorized) {
 			c.region = "ru"
-			c.baseURL = resolveBaseURL(c.region)
+			c.baseURL = c.resolveBaseURL(c.region)
 			if ruErr := c.login(ctx); ruErr != nil {
 				return err // return original error
 			}
@@ -220,7 +237,7 @@ func (c *Client) login(ctx context.Context) error {
 	// Handle redirect to regional endpoint.
 	if loginResp.Data.Redirect && loginResp.Data.Region != "" {
 		c.region = loginResp.Data.Region
-		c.baseURL = resolveBaseURL(c.region)
+		c.baseURL = c.resolveBaseURL(c.region)
 
 		// For non-special regions, try the country config endpoint for the exact URL.
 		// RU has a hardcoded host, other regions may use region-specific shards.
